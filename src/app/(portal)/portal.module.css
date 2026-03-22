@@ -1,0 +1,28 @@
+.portalWrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.mainContent {
+  flex: 1;
+  margin-left: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pageContainer {
+  padding: var(--space-2xl);
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .mainContent {
+    margin-left: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: var(--space-lg);
+  }
+}

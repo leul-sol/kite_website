@@ -1,0 +1,126 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: var(--space-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.itemCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.itemImage {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.itemName {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.statusTag {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.active {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--success);
+}
+
+.inactive {
+  background: rgba(255, 77, 77, 0.1);
+  color: var(--error);
+}
+
+.lowstock {
+  background: rgba(255, 179, 0, 0.1);
+  color: var(--warning);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.actions button {
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  transition: var(--transition-fast);
+}
+
+.actions button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+/* Editor Styles */
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xl);
+}
+
+.stepIndicator {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-2xl);
+}
+
+.step {
+  padding-bottom: 8px;
+  border-bottom: 2px solid transparent;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: var(--transition-normal);
+}
+
+.stepActive {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
