@@ -1,6 +1,6 @@
 export type ListingPhoto = { id: string; url: string; contentType: string; width: number; height: number };
 export function photoUrl(url: string): string {
-  if (/^\/api\/v1\/catalog\/(items|setups)\/[a-f0-9-]{36}\/images\/[a-f0-9-]{36}\/content$/i.test(url)) return url.replace("/api/v1/", "/api/backend/");
+  if (/^\/api\/v1\/catalog\/(items|setups|storefronts)\/[a-f0-9-]{36}\/images\/[a-f0-9-]{36}\/content$/i.test(url)) return url.replace("/api/v1/", "/api/backend/");
   return /^https:\/\//i.test(url) ? url : "";
 }
 export function parsePhotos(value: unknown): ListingPhoto[] {

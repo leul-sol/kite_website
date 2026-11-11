@@ -198,6 +198,40 @@ export const api = {
     });
   },
 
+  // ── Storefront (public profile customers see in the app) ──────────────
+  getStorefront: () => request<Storefront>("/api/v1/catalog/storefronts/me"),
+  saveStorefront: (body: StorefrontDetails) =>
+    request<Storefront>("/api/v1/catalog/storefronts/me", { method: "PUT", body: JSON.stringify(body) }),
+  uploadBrandImage(slot: "logo" | "cover", file: File) {
+    const body = new FormData(); body.set("file", file);
+    return request<Storefront>(`/api/v1/catalog/storefronts/me/${slot}`, { method: "POST", body });
+  },
+  removeBrandImage: (slot: "logo" | "cover") =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/${slot}`, { method: "DELETE" }),
+  addPortfolio: (entry: PortfolioInput) =>
+    request<Storefront>("/api/v1/catalog/storefronts/me/portfolio", { method: "POST", body: JSON.stringify(entry) }),
+  updatePortfolio: (id: string, entry: PortfolioInput) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/portfolio/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(entry) }),
+  deletePortfolio: (id: string) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/portfolio/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  uploadPortfolioPhoto(id: string, file: File) {
+    const body = new FormData(); body.set("file", file);
+    return request<Storefront>(`/api/v1/catalog/storefronts/me/portfolio/${encodeURIComponent(id)}/photos`, { method: "POST", body });
+  },
+  deletePortfolioPhoto: (id: string, photoId: string) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/portfolio/${encodeURIComponent(id)}/photos/${encodeURIComponent(photoId)}`, { method: "DELETE" }),
+  addTeamMember: (member: TeamInput) =>
+    request<Storefront>("/api/v1/catalog/storefronts/me/team", { method: "POST", body: JSON.stringify(member) }),
+  updateTeamMember: (id: string, member: TeamInput) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(member) }),
+  deleteTeamMember: (id: string) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  uploadTeamPhoto(id: string, file: File) {
+    const body = new FormData(); body.set("file", file);
+    return request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}/photo`, { method: "POST", body });
+  },
+  removeTeamPhoto: (id: string) =>
+    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}/photo`, { method: "DELETE" }),
   async getProviderProfile() {
     return request<{
       providerId: string;
@@ -216,3 +250,25 @@ export type KycDocument = { id: string; type: string; contentType: string; sizeB
 export type KycSummary = { verificationStatus: string; currentSubmissionId: string | null; submissionStatus: string | null; requiredDocumentTypes: string[]; uploadsAvailable: boolean; maxFileBytes: number; maxDocumentsPerSubmission: number; maxStoredDocuments: number };
 export type KycSubmission = { id: string; providerId: string; status: string; businessName: string; location: string; bio: string; createdAt: string; reviewedBy: string | null; reviewedAt: string | null; reviewReason: string | null; documents: KycDocument[] };
 export type ProviderProfile = { providerId: string; businessName: string; location: string; verificationStatus: string; bio: string };
+
+export type Offering = "RENTALS" | "SERVICES" | "PACKAGES";
+export type StorefrontDetails = {
+  tagline: string;
+  foundedYear: number | null;
+  serviceAreas: string[];
+  languages: string[];
+  offerings: Offering[];
+};
+export type PortfolioEntry = { id: string; title: string; eventDate: string | null; description: string; photos: string[] };
+export type TeamMember = { id: string; name: string; role: string; bio: string; lead: boolean; photoUrl: string | null };
+export type Storefront = StorefrontDetails & {
+  providerId: string;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  portfolio: PortfolioEntry[];
+  team: TeamMember[];
+  rentalCount: number;
+  packageCount: number;
+};
+export type PortfolioInput = { title: string; eventDate: string | null; description: string };
+export type TeamInput = { name: string; role: string; bio: string; lead: boolean };
