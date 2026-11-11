@@ -236,6 +236,18 @@ export const api = {
   setStaffSkills: (memberId: string, skills: string[]) =>
     request<StaffMember[]>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(memberId)}/skills`, { method: "PUT", body: JSON.stringify({ skills }) }),
 
+  // ── Inventory health (rental listings) ──
+  getInventory: () => request<InventoryView>("/api/v1/catalog/inventory"),
+  reportInventoryIssue: (input: { itemId: string; quantity: number; kind: IssueKind; note: string; bookingId?: string }) =>
+    request<InventoryIssue>("/api/v1/catalog/inventory/issues", { method: "POST", body: JSON.stringify(input) }),
+  resolveInventoryIssue: (id: string, outcome: "RETURNED" | "WRITTEN_OFF") =>
+    request<InventoryIssue>(`/api/v1/catalog/inventory/issues/${encodeURIComponent(id)}/resolve`, { method: "POST", body: JSON.stringify({ outcome }) }),
+  getItemUsage: (itemId: string, from: string, to: string) =>
+    request<ItemUsage>(`/api/v1/bookings/provider/items/${encodeURIComponent(itemId)}/usage?from=${from}&to=${to}`),
+  getHandovers: (bookingId: string) => request<Handover[]>(`/api/v1/bookings/provider/handovers/${encodeURIComponent(bookingId)}`),
+  addHandover: (bookingId: string, input: { kind: Handover["kind"]; condition: Handover["condition"]; note: string }) =>
+    request<Handover>(`/api/v1/bookings/provider/handovers/${encodeURIComponent(bookingId)}`, { method: "POST", body: JSON.stringify(input) }),
+
   getStorefront: () => request<Storefront>("/api/v1/catalog/storefronts/me"),
   saveStorefront: (body: StorefrontDetails) =>
     request<Storefront>("/api/v1/catalog/storefronts/me", { method: "PUT", body: JSON.stringify(body) }),
@@ -322,3 +334,12 @@ export type ScheduledBooking = { id: string; startDate: string; endDate: string;
 export type TimeOff = { id: string; memberId: string; startDate: string; endDate: string; note: string };
 export type StaffSchedule = { from: string; to: string; staff: StaffMember[]; bookings: ScheduledBooking[]; timeOff: TimeOff[] };
 export type StaffConflict = { memberId: string; type: "TIME_OFF" | "DOUBLE_BOOKED"; bookingId: string | null; timeOffId: string | null; startDate: string; endDate: string };
+
+export type IssueKind = "DAMAGED" | "IN_REPAIR" | "LOST";
+export type InventoryItem = { id: string; name: string; stock: number; outOfService: number; active: boolean };
+export type InventoryIssue = { id: string; itemId: string; quantity: number; kind: IssueKind; note: string; bookingId: string | null;
+  status: "OPEN" | "RETURNED" | "WRITTEN_OFF"; reportedAt: string; resolvedAt: string | null };
+export type InventoryView = { items: InventoryItem[]; issues: InventoryIssue[] };
+export type ItemUsage = { itemId: string; from: string; to: string; days: { date: string; reserved: number }[];
+  bookings: { id: string; startDate: string; endDate: string; status: string; quantity: number }[] };
+export type Handover = { id: string; kind: "CHECK_OUT" | "CHECK_IN"; condition: "GOOD" | "ISSUES"; note: string; createdAt: string };

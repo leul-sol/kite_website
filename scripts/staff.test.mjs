@@ -72,3 +72,12 @@ test("order cards offer staff assignment only on open bookings", () => {
   const withoutHandler = renderToStaticMarkup(React.createElement(Card, { order: order("CONFIRMED"), busy: false, onAction: () => {}, onReview: () => {} }));
   assert.doesNotMatch(withoutHandler, /Assign staff/);
 });
+
+test("handover notes are offered once a booking is confirmed", () => {
+  const order = status => parseOrders([{ bookingId: `booking-${status}`, customerId: "customer-123", status,
+    startDate: "2026-12-01", endDate: "2026-12-03", totalMinor: 12345, currency: "ETB" }])[0];
+  const card = status => renderToStaticMarkup(React.createElement(Card, { order: order(status), busy: false,
+    onAction: () => {}, onReview: () => {}, onHandover: () => {} }));
+  for (const status of ["CONFIRMED", "PICKED_UP", "ACTIVE", "COMPLETED"]) assert.match(card(status), /Handover notes/, status);
+  for (const status of ["REQUESTED", "PAID", "CANCELLED"]) assert.doesNotMatch(card(status), /Handover notes/, status);
+});

@@ -1,5 +1,5 @@
 import {
-  BadgeCheck, BarChart3, LayoutDashboard, MessageSquare, Package, ScrollText, ShieldAlert,
+  BadgeCheck, BarChart3, Boxes, LayoutDashboard, MessageSquare, Package, ScrollText, ShieldAlert,
   ShoppingBag, Sparkles, Store, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 
@@ -14,6 +14,7 @@ export const NAV: NavGroup[] = [
   ] },
   { label: "Business", items: [
     { href: "/listings", label: "Listings", icon: Package, description: "Rentals and services you offer" },
+    { href: "/inventory", label: "Inventory", icon: Boxes, description: "Stock, damage and repairs" },
     { href: "/setups", label: "Setups", icon: Sparkles, description: "Complete event packages" },
     { href: "/orders", label: "Orders", icon: ShoppingBag, description: "Bookings from customers" },
     { href: "/staff", label: "Staff", icon: Users, description: "Who works each booking" },

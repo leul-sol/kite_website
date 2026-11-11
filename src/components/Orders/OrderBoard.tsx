@@ -6,6 +6,7 @@ import { orderActions, type Order, type OrderTarget, type ChangeRequest } from "
 import { type StaffSchedule } from "../../services/api";
 import { addDays, orderRange, today } from "../../services/staff";
 import AssignStaffDialog from "../Staff/AssignStaffDialog";
+import HandoverDialog from "../Inventory/HandoverDialog";
 import OrderBoardView from "./OrderBoardView";
 
 export default function OrderBoard() {
@@ -18,6 +19,7 @@ export default function OrderBoard() {
   const [note, setNote] = useState("");
   const [staffing, setStaffing] = useState<StaffSchedule | null>(null);
   const [assigning, setAssigning] = useState<{ order: Order; start: string; end: string } | null>(null);
+  const [handover, setHandover] = useState<string | null>(null);
   const loadController = useRef<AbortController | null>(null);
   // Who works which booking, for the last month and the next two. Optional: the board works without it.
   const loadStaff = useCallback(() => {
@@ -77,6 +79,7 @@ export default function OrderBoard() {
   return <>
   {assigning && <AssignStaffDialog bookingId={assigning.order.id} start={assigning.start} end={assigning.end}
     onClose={() => setAssigning(null)} onSaved={loadStaff} />}
+  {handover && <HandoverDialog bookingId={handover} onClose={() => setHandover(null)} />}
   <OrderBoardView orders={orders} loading={loading} error={error} busy={busy}
     refresh={() => { setError(""); void load(); }}
     onAction={(order, target) => {
@@ -86,6 +89,7 @@ export default function OrderBoard() {
     onClose={() => { setPending(null); setReview(null); }}
     onConfirm={() => { if (pending) void run(() => api.updateOrderStatus(pending.order.id, pending.target), true); }}
     onResolve={(id, approved) => { if (review) void run(() => api.resolveOrderChange(review.order.id, id, approved, note), true); }}
-    staffFor={staffFor} onAssign={order => { const range = orderRange(order.date); if (range) setAssigning({ order, ...range }); }} />
+    staffFor={staffFor} onAssign={order => { const range = orderRange(order.date); if (range) setAssigning({ order, ...range }); }}
+    onHandover={order => setHandover(order.id)} />
   </>;
 }
