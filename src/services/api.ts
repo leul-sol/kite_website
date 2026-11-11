@@ -58,6 +58,8 @@ export type Listing = {
   stock: number;
   image: string;
   currency: string;
+  listingType: "RENTAL" | "SERVICE";
+  pricingUnit: "DAY" | "EVENT" | "HOUR" | "PERSON";
 };
 
 export type PolicyState={version:number;rules:Record<string,number|boolean|string>|null};
@@ -104,6 +106,8 @@ export const api = {
         quantityAvailable: number;
         imageUrls: string[];
         currency: string;
+        listingType?: string;
+        pricingUnit?: string;
       }>
     >("/api/v1/catalog/provider/items");
     return items.map((item) => ({
@@ -115,6 +119,8 @@ export const api = {
       stock: item.quantityAvailable,
       image: photoUrl(item.imageUrls?.[0] ?? ""),
       currency: item.currency,
+      listingType: item.listingType === "SERVICE" ? "SERVICE" : "RENTAL",
+      pricingUnit: (["DAY", "EVENT", "HOUR", "PERSON"].includes(item.pricingUnit ?? "") ? item.pricingUnit : "DAY") as Listing["pricingUnit"],
     }));
   },
 

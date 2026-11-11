@@ -1,29 +1,17 @@
 "use client";
-import { useEffect, useRef, type ReactNode } from "react";
-import styles from "./Listings.module.css";
+import type { ReactNode } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
+/** Modal used by listing editors. Closing is blocked while a save is running. */
 export default function ListingDialog({ label, busy = false, onClose, children }: {
   label: string; busy?: boolean; onClose: () => void; children: ReactNode;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const element = dialog.current!;
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    element.showModal();
-    return () => { element.close(); if (opener?.isConnected) opener.focus(); };
-  }, []);
-  return <dialog ref={dialog} aria-label={label} aria-busy={busy} className={`glass-card ${styles.editorPanel}`}
-    onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}
-    onKeyDown={event => {
-      if (event.key !== "Tab") return;
-      const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'
-      )).filter(element => element.getClientRects().length > 0);
-      const first = controls[0], last = controls[controls.length - 1];
-      if (first && last && ((!event.shiftKey && document.activeElement === last) || (event.shiftKey && document.activeElement === first))) {
-        event.preventDefault(); (event.shiftKey ? last : first).focus();
-      }
-    }}>
-    {children}
-  </dialog>;
+  return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
+    <DialogContent aria-label={label} aria-busy={busy} showCloseButton={!busy}
+      className="max-h-[90vh] gap-4 overflow-y-auto sm:max-w-2xl"
+      onInteractOutside={event => { if (busy) event.preventDefault(); }}>
+      <DialogTitle className="sr-only">{label}</DialogTitle>
+      {children}
+    </DialogContent>
+  </Dialog>;
 }

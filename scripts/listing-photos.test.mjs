@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { installSrcAlias } from "./ts-alias.mjs";
+installSrcAlias();
 const require = createRequire(import.meta.url), ts = require("typescript");
 const saved = Object.fromEntries([".ts", ".tsx", ".css"].map(ext => [ext, require.extensions[ext]]));
 const compile = (module, filename) => module._compile(ts.transpileModule(readFileSync(filename, "utf8"), {
@@ -57,7 +59,7 @@ test("inactive listing photos are not rendered as publicly visible", () => {
 test("five photos disable additional upload and busy state disables destructive actions", () => {
   const html = render({ photos: Array.from({ length: 5 }, (_, index) => ({ ...photo, id: String(index) })) });
   assert.match(html, /type="file"[^>]*disabled=""/);
-  assert.match(render({ photos: parsePhotos([photo]), busy: true }), /disabled=""[^>]*>Delete photo/);
+  assert.match(render({ photos: parsePhotos([photo]), busy: true }), /<button[^>]*disabled=""[^>]*>(?:(?!<\/button>)[\s\S])*Delete photo/);
 });
 test("API uses owner-scoped inventory and preserves multipart, cover order and delete payloads", async () => {
   const original = globalThis.fetch, seen = [];

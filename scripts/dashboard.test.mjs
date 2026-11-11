@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { installSrcAlias } from "./ts-alias.mjs";
+installSrcAlias();
 
 // Render the actual TSX view with React SSR. No browser state or CSS assertions;
 // these checks cover financial labels, partial failures and honest loading states.
