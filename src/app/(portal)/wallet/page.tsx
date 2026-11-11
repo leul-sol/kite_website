@@ -1,16 +1,26 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
 import styles from "./Wallet.module.css";
-
-const mockTransactions = [
-  { id: 'TX-9901', type: 'Rental', amount: '+$320.00', date: 'Oct 21, 2026', status: 'Completed', item: 'Royal Velvet Sofa' },
-  { id: 'TX-9902', type: 'Payout', amount: '-$1,200.00', date: 'Oct 19, 2026', status: 'Pending', bank: 'Chase **** 4421' },
-  { id: 'TX-9903', type: 'Rental', amount: '+$45.00', date: 'Oct 18, 2026', status: 'Completed', item: 'Golden Candelabra' },
-  { id: 'TX-9904', type: 'Rental', amount: '+$600.00', date: 'Oct 15, 2026', status: 'Completed', item: 'Marble Banquet Table' },
-];
+import { api } from "@/services/api";
 
 export default function WalletPage() {
+  const [balanceMinor, setBalanceMinor] = useState(0);
+  const [transactions, setTransactions] = useState<
+    Array<{ id: string; type: string; direction: string; amountMinor: number; createdAt: string }>
+  >([]);
+
+  const loadWallet = async () => {
+    const { wallet, transactions } = await api.getWallet();
+    setBalanceMinor(wallet.balanceMinor);
+    setTransactions(transactions);
+  };
+
+  useEffect(() => {
+    loadWallet().catch(() => undefined);
+  }, []);
+
   return (
     <div className="fade-in">
       <header style={{ marginBottom: 'var(--space-2xl)' }}>
@@ -22,10 +32,13 @@ export default function WalletPage() {
         <div className="glass-card" style={{ padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', background: 'linear-gradient(135deg, rgba(123, 97, 255, 0.1), rgba(0, 242, 234, 0.05))' }}>
           <div>
             <span className="text-small" style={{ color: 'var(--text-secondary)' }}>Available Balance</span>
-            <h2 className="h1" style={{ fontSize: '3rem', margin: 'var(--space-xs) 0' }}>$4,280.50</h2>
+            <h2 className="h1" style={{ fontSize: '3rem', margin: 'var(--space-xs) 0' }}>ETB {(balanceMinor / 100).toFixed(2)}</h2>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <button className="btn-primary" style={{ flex: 1 }}>Request Payout</button>
+            <button className="btn-primary" style={{ flex: 1 }} onClick={async () => {
+              await api.payout(50000);
+              await loadWallet();
+            }}>Request Payout</button>
             <button className="btn-secondary" style={{ padding: '12px' }}><CreditCard size={20} /></button>
           </div>
         </div>
@@ -55,24 +68,26 @@ export default function WalletPage() {
               </tr>
             </thead>
             <tbody>
-              {mockTransactions.map((tx) => (
+              {transactions.map((tx) => (
                 <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: 'var(--space-lg)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: tx.type === 'Rental' ? 'rgba(0, 230, 118, 0.1)' : 'rgba(123, 97, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {tx.type === 'Rental' ? <ArrowDownLeft size={16} color="var(--success)" /> : <ArrowUpRight size={16} color="var(--accent-premium)" />}
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: tx.direction === 'CREDIT' ? 'rgba(0, 230, 118, 0.1)' : 'rgba(123, 97, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {tx.direction === 'CREDIT' ? <ArrowDownLeft size={16} color="var(--success)" /> : <ArrowUpRight size={16} color="var(--accent-premium)" />}
                       </div>
                       <div>
-                        <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{tx.type} - {tx.item || tx.bank}</p>
+                        <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{tx.type}</p>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{tx.id}</p>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: 'var(--space-lg)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{tx.date}</td>
-                  <td style={{ padding: 'var(--space-lg)', fontSize: '0.875rem', fontWeight: 700, color: tx.type === 'Rental' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{tx.amount}</td>
+                  <td style={{ padding: 'var(--space-lg)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                  <td style={{ padding: 'var(--space-lg)', fontSize: '0.875rem', fontWeight: 700, color: tx.direction === 'CREDIT' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                    {tx.direction === "CREDIT" ? "+" : "-"}ETB {(tx.amountMinor / 100).toFixed(2)}
+                  </td>
                   <td style={{ padding: 'var(--space-lg)' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 8px', borderRadius: 'var(--radius-full)', background: tx.status === 'Completed' ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 179, 0, 0.1)', color: tx.status === 'Completed' ? 'var(--success)' : 'var(--warning)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      {tx.status === 'Pending' && <Clock size={12} />} {tx.status}
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(0, 230, 118, 0.1)', color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={12} /> Completed
                     </span>
                   </td>
                 </tr>

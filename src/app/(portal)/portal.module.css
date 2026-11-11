@@ -4,6 +4,7 @@
 }
 
 .mainContent {
+  min-width: 0;
   flex: 1;
   margin-left: 280px;
   display: flex;

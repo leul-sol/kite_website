@@ -1,6 +1,6 @@
 .board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-xl);
   align-items: flex-start;
   min-height: calc(100vh - 250px);
@@ -34,7 +34,7 @@
 }
 
 .dropZone {
-  min-height: 500px;
+  min-height: 100px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: var(--radius-md);
   padding: var(--space-md);
@@ -46,6 +46,14 @@
   border-color: var(--border-color);
   background: rgba(255, 255, 255, 0.03);
 }
+
+.toolbar, .actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+.toolbar { justify-content: space-between; margin-bottom: var(--space-lg); }
+.card, .review { padding: var(--space-md); margin-bottom: var(--space-md); overflow-wrap: anywhere; }
+.card p { font-size: 0.8rem; color: var(--text-secondary); margin: var(--space-sm) 0; }
+.reference { font-size: 0.7rem; }
+.actions { margin-top: var(--space-md); }
+.review textarea { display: block; width: 100%; min-height: 80px; margin-top: var(--space-sm); }
 
 @media (max-width: 1200px) {
   .board {
