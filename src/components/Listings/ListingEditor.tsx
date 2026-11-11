@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 import { api } from "../../services/api";
 import { etbMinor } from "../../services/listing-photos";
+import { offerPayload } from "../../services/listing-edit";
+import OfferFields from "./OfferFields";
 import ListingPhotoManager from "./ListingPhotoManager";
 import ListingDialog from "./ListingDialog";
 import styles from "./Listings.module.css";
@@ -22,9 +24,10 @@ export default function ListingEditor({ onClose, onPublished }: { onClose: () =>
           const quantityAvailable = Number(form.get("stock"));
           const securityDepositMinor = etbMinor(String(form.get("deposit")), true);
           if (!Number.isSafeInteger(quantityAvailable) || quantityAvailable < 1) throw new Error("Enter a whole stock quantity of at least one.");
+          const offer = offerPayload(form);
           locked.current = true; setBusy(true);
           const item = await api.createListing({ name: String(form.get("name")).trim(), categoryId: String(form.get("category")),
-            description: String(form.get("description")).trim(), pricePerDayMinor, quantityAvailable, securityDepositMinor });
+            description: String(form.get("description")).trim(), pricePerDayMinor, quantityAvailable, securityDepositMinor, ...offer });
           setCreated(item.id); onPublished?.();
         } catch (cause) { setError(cause instanceof Error ? cause.message : "Listing could not be created."); }
         finally { locked.current = false; setBusy(false); }
@@ -34,9 +37,7 @@ export default function ListingEditor({ onClose, onPublished }: { onClose: () =>
           <option value="weddings">Weddings</option><option value="birthday">Birthday</option><option value="graduation">Graduation</option><option value="spiritual">Spiritual</option>
         </select></label>
         <label className={styles.field}>Description<textarea name="description" required maxLength={5000} disabled={busy} /></label>
-        <label className={styles.field}>Daily rate (ETB)<input name="rate" required inputMode="decimal" placeholder="100.00" disabled={busy} /></label>
-        <label className={styles.field}>Security deposit (ETB)<input name="deposit" required inputMode="decimal" defaultValue="0.00" disabled={busy} /></label>
-        <label className={styles.field}>Stock quantity<input name="stock" type="number" min={1} step={1} defaultValue={1} required disabled={busy} /></label>
+        <OfferFields busy={busy} />
         <p>Create the listing first, then upload photos. You can manage photos later from Inventory.</p>
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? "Creating..." : "Create listing"}</button>
       </form> : <ListingPhotoManager itemId={created} onChanged={onPublished} onBusyChange={setPhotoBusy} />}

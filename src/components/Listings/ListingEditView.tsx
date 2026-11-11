@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
-import type { ListingDetail, ListingEdit } from "../../services/listing-edit";
+import { offerOf, type ListingDetail, type ListingEdit } from "../../services/listing-edit";
+import OfferFields from "./OfferFields";
 import styles from "./Listings.module.css";
 
 export default function ListingEditView({ item, categories, busy, conflict, pending, onSubmit, onConfirm, onBack }: {
@@ -12,9 +13,8 @@ export default function ListingEditView({ item, categories, busy, conflict, pend
         <label className={styles.field}>Listing name<input name="name" required maxLength={255} defaultValue={item.name} /></label>
         <div className={styles.field}><label htmlFor="listing-edit-category">Category</label><select id="listing-edit-category" name="category" defaultValue={item.categoryId}>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
         <div className={styles.field}><label htmlFor="listing-edit-description">Description</label><textarea id="listing-edit-description" name="description" required maxLength={5000} defaultValue={item.description} /></div>
-        <label className={styles.field}>Daily rate (ETB)<input name="rate" required inputMode="decimal" defaultValue={(item.pricePerDayMinor / 100).toFixed(2)} /></label>
-        <label className={styles.field}>Security deposit (ETB)<input name="deposit" required inputMode="decimal" defaultValue={(item.securityDepositMinor / 100).toFixed(2)} /></label>
-        <label className={styles.field}>Stock quantity<input name="stock" type="number" required min={0} max={1000000} step={1} defaultValue={item.quantityAvailable} /></label>
+        <OfferFields initial={offerOf(item)} busy={busy || conflict || !!pending}
+          price={(item.pricePerDayMinor / 100).toFixed(2)} deposit={(item.securityDepositMinor / 100).toFixed(2)} stock={item.quantityAvailable} minStock={0} />
         <p>Stock reductions are checked against existing booking commitments. Booked units cannot be removed.</p>
         <label className={styles.field}><span>Active listing</span><input name="active" type="checkbox" defaultChecked={item.active} /></label>
         <p>Price and deposit changes apply to new bookings. Existing bookings keep their recorded amounts.</p>

@@ -15,7 +15,7 @@ const { default: View } = load("../src/components/Listings/ListingPhotoView.tsx"
 const { photoUrl, parsePhotos, validatePhoto, etbMinor } = load("../src/services/listing-photos.ts");
 const { api } = load("../src/services/api.ts");
 const { default: EditView } = load("../src/components/Listings/ListingEditView.tsx");
-const { parseListingDetail, listingEditPayload } = load("../src/services/listing-edit.ts");
+const { parseListingDetail, listingEditPayload, offerPayload, offerOf } = load("../src/services/listing-edit.ts");
 Object.assign(require.extensions, saved);
 const React = require("react"), { renderToStaticMarkup } = require("react-dom/server");
 const item = "11111111-1111-4111-8111-111111111111", id = "22222222-2222-4222-8222-222222222222";
@@ -80,6 +80,21 @@ test("listing edits preserve the loaded revision and exact price/deposit minor u
   assert.equal(payload.quantityAvailable, 5); assert.equal(payload.active, true);
   assert.ok(!("imageUrls" in payload)); assert.ok(!("specs" in payload)); assert.ok(!("providerId" in payload));
   const freeDeposit = form(); freeDeposit.set("deposit", "0.00"); assert.equal(listingEditPayload(detail, freeDeposit).securityDepositMinor, 0);
+});
+test("services are priced per event, hour, guest or day; rentals always per day", () => {
+  const offer = values => { const f = new FormData(); for (const [k, v] of Object.entries(values)) f.set(k, v); return offerPayload(f); };
+  assert.deepEqual(offer({}), { listingType: "RENTAL", pricingUnit: "DAY", minUnits: 1, maxUnits: null });
+  assert.deepEqual(offer({ listingType: "RENTAL", pricingUnit: "HOUR" }), { listingType: "RENTAL", pricingUnit: "DAY", minUnits: 1, maxUnits: null }, "rentals ignore other units");
+  assert.deepEqual(offer({ listingType: "SERVICE", pricingUnit: "EVENT", minUnits: "9" }), { listingType: "SERVICE", pricingUnit: "EVENT", minUnits: 1, maxUnits: null }, "flat pricing has no range");
+  assert.deepEqual(offer({ listingType: "SERVICE", pricingUnit: "HOUR", minUnits: "2", maxUnits: "8" }), { listingType: "SERVICE", pricingUnit: "HOUR", minUnits: 2, maxUnits: 8 });
+  assert.deepEqual(offer({ listingType: "SERVICE", pricingUnit: "PERSON", minUnits: "50", maxUnits: "" }), { listingType: "SERVICE", pricingUnit: "PERSON", minUnits: 50, maxUnits: null });
+  for (const bad of [{ minUnits: "0" }, { minUnits: "2.5" }, { minUnits: "10", maxUnits: "5" }, { minUnits: "1", maxUnits: "20000" }]) {
+    assert.throws(() => offer({ listingType: "SERVICE", pricingUnit: "PERSON", ...bad }), undefined, JSON.stringify(bad));
+  }
+  assert.throws(() => offer({ listingType: "SERVICE", pricingUnit: "WEEK" }));
+  assert.deepEqual(offerOf({}), { listingType: "RENTAL", pricingUnit: "DAY", minUnits: 1, maxUnits: null }, "older listings are rentals");
+  const edited = listingEditPayload(detail, (() => { const f = form(); f.set("listingType", "SERVICE"); f.set("pricingUnit", "HOUR"); f.set("minUnits", "3"); return f; })());
+  assert.equal(edited.pricingUnit, "HOUR"); assert.equal(edited.minUnits, 3); assert.equal(edited.expectedRevision, 7);
 });
 test("stock reductions reach server validation while malformed listing inputs fail clearly", () => {
   const reduced = form(); reduced.set("stock", "0"); assert.equal(listingEditPayload(detail, reduced).quantityAvailable, 0);

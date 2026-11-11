@@ -125,6 +125,10 @@ export const api = {
     pricePerDayMinor: number;
     quantityAvailable: number;
     securityDepositMinor?: number;
+    listingType?: "RENTAL" | "SERVICE";
+    pricingUnit?: "DAY" | "EVENT" | "HOUR" | "PERSON";
+    minUnits?: number;
+    maxUnits?: number | null;
   }): Promise<{ id: string }> {
     return request<{ id: string }>("/api/v1/catalog/items", {
       method: "POST",
