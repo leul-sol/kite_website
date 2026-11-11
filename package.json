@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:portal": "node --test scripts/portal-integration.test.mjs scripts/dashboard.test.mjs scripts/orders.test.mjs scripts/listing-photos.test.mjs",
+    "test:browser": "python ../kite_backend/platform/acceptance_backend.py --with-browser --with-smtp",
     "lint": "next lint"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

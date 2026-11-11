@@ -51,7 +51,21 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
+
+.description { margin-top: 12px; color: var(--text-secondary); font-size: .8rem; line-height: 1.5; }
+.pageHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.messages { margin-bottom: 16px; }
+.messages [role="alert"] { color: var(--error); }
+.panel { padding: 24px; display: grid; align-content: start; gap: 20px; min-width: 0; }
+.activity { display: grid; gap: 16px; padding: 0; list-style: none; }
+.activity li { display: flex; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); overflow-wrap: anywhere; }
+.activity time { color: var(--text-secondary); font-size: .8rem; display: block; margin-top: 6px; }
+.activityDot { width: 8px; height: 8px; background: var(--accent-primary); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+.totals { display: grid; gap: 16px; }
+.totals > div { display: flex; gap: 16px; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+.totals dd { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .dashboardGrid {
   display: grid;

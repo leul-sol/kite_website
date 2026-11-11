@@ -1,0 +1,16 @@
+.page { display: grid; gap: 20px; min-width: 0; max-width: 1200px; }
+.page label { display: grid; gap: 8px; color: var(--text-secondary); }
+.page input, .page select, .page textarea {
+  width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--border-subtle, #333);
+  border-radius: 8px; background: var(--bg-secondary, #171717); color: var(--text-primary, #fff); font: inherit;
+}
+.page textarea { min-height: 110px; resize: vertical; }
+.page form, .page fieldset, .page article { display: grid; gap: 16px; min-width: 0; }
+.page fieldset { border: 1px solid var(--border-subtle, #333); border-radius: 12px; padding: 20px; }
+.page article { padding: 20px; overflow-wrap: anywhere; }
+.page button { justify-self: start; }
+.page table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.page th, .page td { padding: 12px; border-bottom: 1px solid var(--border-subtle, #333); text-align: left; white-space: nowrap; }
+.page h2 { margin-top: 16px; }
+.page svg { margin: 20px 0; }
+.page :is(input, select, textarea):focus-visible { outline: 2px solid var(--accent-primary, #00c9cb); outline-offset: 2px; }

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { mockApi } from '@/services/api';
+import { api, type Listing } from '@/services/api';
 
 export function useListings() {
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mockApi.getListings().then(data => {
-      setListings(data);
-      setLoading(false);
-    });
+    api
+      .getListings()
+      .then((data) => {
+        setListings(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return { listings, loading };

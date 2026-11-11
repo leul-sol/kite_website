@@ -15,15 +15,13 @@ export default function TopBar() {
       <div className={styles.actions}>
         <button className={styles.actionBtn}>
           <Bell size={20} />
-          <span className={styles.badge}>3</span>
         </button>
         <button className={styles.actionBtn}>
           <Moon size={20} />
         </button>
         <div className={styles.divider} />
         <div className={styles.statusBadge}>
-          <div className={styles.statusDot} />
-          Live Status: Active
+          Provider portal
         </div>
       </div>
     </header>

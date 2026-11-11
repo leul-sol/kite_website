@@ -1,42 +1,70 @@
 "use client";
 
-import OrderCard from "./OrderCard";
-import styles from "./Orders.module.css";
-
-const columns = [
-  { id: 'new', title: 'New Requests', color: 'var(--accent-premium)' },
-  { id: 'confirmed', title: 'Confirmed', color: 'var(--accent-secondary)' },
-  { id: 'progress', title: 'In Progress', color: 'var(--accent-primary)' },
-  { id: 'completed', title: 'Completed', color: 'var(--success)' },
-];
-
-const mockOrders = [
-  { id: 'ORD-7721', item: 'Royal Velvet Sofa', customer: 'Alex Rivera', date: 'Oct 24 - 26', total: '$360', status: 'new' },
-  { id: 'ORD-7725', item: 'Golden Candelabra (x4)', customer: 'Sophie Chen', date: 'Oct 25', total: '$180', status: 'new' },
-  { id: 'ORD-7718', item: 'Crystal Chandelier', customer: 'Marcus Thorne', date: 'Oct 22 - 23', total: '$700', status: 'confirmed' },
-  { id: 'ORD-7712', item: 'Marble Banquet Table', customer: 'Emma Watson', date: 'Oct 20 - 21', total: '$400', status: 'progress' },
-];
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "../../services/api";
+import { orderActions, type Order, type OrderTarget, type ChangeRequest } from "../../services/orders";
+import OrderBoardView from "./OrderBoardView";
 
 export default function OrderBoard() {
-  return (
-    <div className={styles.board}>
-      {columns.map((col) => (
-        <div key={col.id} className={styles.column}>
-          <div className={styles.columnHeader}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.color }} />
-              <h3 className={styles.columnTitle}>{col.title}</h3>
-            </div>
-            <span className={styles.count}>{mockOrders.filter(o => o.status === col.id).length}</span>
-          </div>
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<{ order: Order; changes: ChangeRequest[] } | null>(null);
+  const [pending, setPending] = useState<{ order: Order; target: OrderTarget } | null>(null);
+  const [note, setNote] = useState("");
+  const loadController = useRef<AbortController | null>(null);
+  const mutation = useRef(false);
+  const mounted = useRef(true);
+  const load = useCallback(async () => {
+    loadController.current?.abort();
+    const controller = new AbortController(); loadController.current = controller;
+    setLoading(true); setOrders([]);
+    try {
+      const data = await api.getOrders(controller.signal);
+      if (!controller.signal.aborted) setOrders(data);
+    } catch {
+      if (!controller.signal.aborted) setError("Bookings could not be loaded. Refresh to try again.");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    mounted.current = true;
+    void load();
+    return () => { mounted.current = false; loadController.current?.abort(); };
+  }, [load]);
 
-          <div className={styles.dropZone}>
-            {mockOrders.filter(o => o.status === col.id).map(order => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const run = async (operation: () => Promise<unknown>, changed: boolean) => {
+    if (mutation.current) return;
+    mutation.current = true; setBusy(true); setError("");
+    try {
+      await operation();
+      if (mounted.current && changed) { setPending(null); setReview(null); await load(); }
+    } catch (cause) {
+      if (mounted.current) {
+        setError(cause instanceof Error ? cause.message : "The request failed. Refresh and try again.");
+        // Never guess a new status after a conflict or an uncertain response.
+        if (changed) { setPending(null); setReview(null); await load(); }
+      }
+    } finally {
+      mutation.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
+  const reviewChanges = (order: Order) => void run(async () => {
+    const changes = await api.getOrderChanges(order.id);
+    if (!Array.isArray(changes)) throw new Error("Invalid change request response");
+    if (mounted.current) { setNote(""); setReview({ order, changes: changes.filter(change => change.status === "OPEN") }); }
+  }, false);
+
+  return <OrderBoardView orders={orders} loading={loading} error={error} busy={busy}
+    refresh={() => { setError(""); void load(); }}
+    onAction={(order, target) => {
+      if (!orderActions(order.status).some(action => action.target === target)) return;
+      setPending({ order, target });
+    }} onReview={reviewChanges} pending={pending} review={review} note={note} onNote={setNote}
+    onClose={() => { setPending(null); setReview(null); }}
+    onConfirm={() => { if (pending) void run(() => api.updateOrderStatus(pending.order.id, pending.target), true); }}
+    onResolve={(id, approved) => { if (review) void run(() => api.resolveOrderChange(review.order.id, id, approved, note), true); }} />;
 }
