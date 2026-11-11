@@ -28,7 +28,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     return NextResponse.json({ error: "Request origin is not allowed" }, { status: 403 });
   }
   const authAction = route.startsWith("auth/") ? route.slice(5) : null;
-  if (!/^(auth|catalog|bookings|wallet|providers)(\/|$)/.test(route) || adminOnly.some(([method, pattern]) => (!method || method === req.method) && pattern.test(route)) || path.some(p => !/^[a-zA-Z0-9_-]+$/.test(p))) {
+  if (!/^(auth|catalog|bookings|wallet|providers|messages)(\/|$)/.test(route) || adminOnly.some(([method, pattern]) => (!method || method === req.method) && pattern.test(route)) || path.some(p => !/^[a-zA-Z0-9_-]+$/.test(p))) {
     return NextResponse.json({ error: "Unknown endpoint" }, { status: 404 });
   }
   if (authAction && (!publicActions.has(authAction) && !["refresh", "logout"].includes(authAction))) {

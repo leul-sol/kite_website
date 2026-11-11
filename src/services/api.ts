@@ -198,6 +198,12 @@ export const api = {
     });
   },
 
+  // ── Messages (providers reply; customers start conversations in the app) ──
+  getConversations: () => request<ConversationSummary[]>("/api/v1/messages/conversations"),
+  getConversation: (id: string) => request<ChatThread>(`/api/v1/messages/conversations/${encodeURIComponent(id)}`),
+  sendMessage: (id: string, body: string) =>
+    request<ChatMessage>(`/api/v1/messages/conversations/${encodeURIComponent(id)}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
+  getUnreadMessages: () => request<{ count: number }>("/api/v1/messages/unread"),
   // ── Storefront (public profile customers see in the app) ──────────────
   getStorefront: () => request<Storefront>("/api/v1/catalog/storefronts/me"),
   saveStorefront: (body: StorefrontDetails) =>
@@ -272,3 +278,10 @@ export type Storefront = StorefrontDetails & {
 };
 export type PortfolioInput = { title: string; eventDate: string | null; description: string };
 export type TeamInput = { name: string; role: string; bio: string; lead: boolean };
+
+export type ConversationSummary = {
+  id: string; otherId: string; otherName: string; itemId: string | null;
+  lastMessage: string | null; lastFromMe: boolean; lastMessageAt: string; unread: number;
+};
+export type ChatMessage = { id: string; body: string; mine: boolean; contactHidden: boolean; sentAt: string };
+export type ChatThread = { id: string; otherId: string; otherName: string; itemId: string | null; messages: ChatMessage[] };

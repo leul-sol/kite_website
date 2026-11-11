@@ -10,7 +10,8 @@ import {
   Store, 
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
 import { motion } from "framer-motion";
@@ -22,6 +23,7 @@ const menuItems = [
   { id: 'listings', label: 'Listings', icon: Package, href: '/listings' },
   { id: 'setups', label: 'Setups', icon: Store, href: '/setups' },
   { id: 'orders', label: 'Orders', icon: ShoppingCart, href: '/orders' },
+  { id: 'messages', label: 'Messages', icon: MessageSquare, href: '/messages' },
   { id: 'disputes', label: 'Disputes', icon: ShoppingCart, href: '/disputes' },
   { id: 'analytics', label: 'Analytics', icon: LayoutDashboard, href: '/analytics' },
   { id: 'policies', label: 'Policies', icon: Settings, href: '/policies' },
