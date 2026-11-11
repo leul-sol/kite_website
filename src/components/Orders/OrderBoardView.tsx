@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { orderColumns, orderColumn, orderActions, type Order, type OrderTarget, type ChangeRequest } from "../../services/orders";
+import type { StaffMember } from "@/services/api";
 import OrderCard from "./OrderCard";
 
 const panel = "space-y-3 rounded-xl border p-4 shadow-xs";
@@ -15,6 +16,7 @@ export default function OrderBoardView(props: {
   review: { order: Order; changes: ChangeRequest[] } | null;
   note: string; onNote: (value: string) => void; onClose: () => void;
   onConfirm: () => void; onResolve: (id: string, approved: boolean) => void;
+  staffFor?: (orderId: string) => StaffMember[] | undefined; onAssign?: (order: Order) => void;
 }) {
   const disabled = props.busy || props.loading;
   const columns = orderColumns.filter(column => column.id !== "other" || props.orders.some(order => orderColumn(order.status) === "other"));
@@ -78,7 +80,7 @@ export default function OrderBoardView(props: {
           <div className="flex-1 space-y-3">
             {orders.length === 0 && <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">Nothing here</p>}
             {orders.map(order => <OrderCard key={order.id} order={order} busy={disabled || !!props.pending || !!props.review}
-              onAction={props.onAction} onReview={props.onReview} />)}
+              onAction={props.onAction} onReview={props.onReview} staff={props.staffFor?.(order.id)} onAssign={props.onAssign} />)}
           </div>
         </section>;
       })}

@@ -26,7 +26,7 @@ export async function backendFetch(path: string, options?: RequestInit): Promise
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) { super(message); }
+  constructor(message: string, public readonly status: number, public readonly problem: Record<string, unknown> = {}) { super(message); }
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -41,7 +41,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const problem = await response.json().catch(() => ({}));
-    throw new ApiError(problem.detail ?? problem.error ?? problem.message ?? `Request failed (${response.status})`, response.status);
+    throw new ApiError(problem.detail ?? problem.error ?? problem.message ?? `Request failed (${response.status})`, response.status, problem);
   }
   if (response.status === 204) {
     return {} as T;
@@ -215,6 +215,27 @@ export const api = {
     request<ChatMessage>(`/api/v1/messages/conversations/${encodeURIComponent(id)}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
   getUnreadMessages: () => request<{ count: number }>("/api/v1/messages/unread"),
   // ── Storefront (public profile customers see in the app) ──────────────
+  // ── Staff scheduling (team members come from the storefront team) ──
+  getStaffSchedule: (from: string, to: string) =>
+    request<StaffSchedule>(`/api/v1/bookings/provider/staff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  /** Saves who works a booking. Clashes come back as conflicts unless acknowledged. */
+  async assignStaff(bookingId: string, memberIds: string[], acknowledgeConflicts = false): Promise<{ saved: boolean; conflicts: StaffConflict[] }> {
+    try {
+      const result = await request<{ conflicts: StaffConflict[] }>(`/api/v1/bookings/provider/staff/bookings/${encodeURIComponent(bookingId)}`,
+        { method: "PUT", body: JSON.stringify({ memberIds, acknowledgeConflicts }) });
+      return { saved: true, conflicts: result.conflicts ?? [] };
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 409 && Array.isArray(cause.problem.conflicts))
+        return { saved: false, conflicts: cause.problem.conflicts as StaffConflict[] };
+      throw cause;
+    }
+  },
+  addTimeOff: (input: { memberId: string; startDate: string; endDate: string; note: string }) =>
+    request<{ timeOff: TimeOff; affectedBookings: string[] }>("/api/v1/bookings/provider/staff/time-off", { method: "POST", body: JSON.stringify(input) }),
+  removeTimeOff: (id: string) => request<void>(`/api/v1/bookings/provider/staff/time-off/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  setStaffSkills: (memberId: string, skills: string[]) =>
+    request<StaffMember[]>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(memberId)}/skills`, { method: "PUT", body: JSON.stringify({ skills }) }),
+
   getStorefront: () => request<Storefront>("/api/v1/catalog/storefronts/me"),
   saveStorefront: (body: StorefrontDetails) =>
     request<Storefront>("/api/v1/catalog/storefronts/me", { method: "PUT", body: JSON.stringify(body) }),
@@ -295,3 +316,9 @@ export type ConversationSummary = {
 };
 export type ChatMessage = { id: string; body: string; mine: boolean; contactHidden: boolean; sentAt: string };
 export type ChatThread = { id: string; otherId: string; otherName: string; itemId: string | null; messages: ChatMessage[] };
+
+export type StaffMember = { id: string; name: string; role: string; skills: string[]; photoUrl: string | null };
+export type ScheduledBooking = { id: string; startDate: string; endDate: string; status: string; staff: string[]; itemIds: string[] };
+export type TimeOff = { id: string; memberId: string; startDate: string; endDate: string; note: string };
+export type StaffSchedule = { from: string; to: string; staff: StaffMember[]; bookings: ScheduledBooking[]; timeOff: TimeOff[] };
+export type StaffConflict = { memberId: string; type: "TIME_OFF" | "DOUBLE_BOOKED"; bookingId: string | null; timeOffId: string | null; startDate: string; endDate: string };
