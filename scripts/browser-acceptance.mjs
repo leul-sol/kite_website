@@ -32,7 +32,7 @@ try {
   await check("real browser login retains HTTP-only cookies and loads provider data", async () => {
     await page.goto(`${config.origin}/listings`);
     await expect(page).toHaveURL(/\/auth\/login$/);
-    await page.getByLabel("Email address", { exact: true }).fill(config.email);
+    await page.getByLabel("Email or phone", { exact: true }).fill(config.email);
     await page.getByLabel("Password", { exact: true }).fill(config.password);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -248,7 +248,7 @@ try {
   observe(adminPage);
   const login = async (target, account) => {
     await target.goto(`${config.origin}/auth/login`);
-    await target.getByLabel("Email address", { exact: true }).fill(account.email);
+    await target.getByLabel("Email or phone", { exact: true }).fill(account.email);
     await target.getByLabel("Password", { exact: true }).fill(account.password);
     await target.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(target).toHaveURL(/\/dashboard$/);
@@ -256,12 +256,12 @@ try {
   // Administrators work in the separate kite_admin console, never in the provider portal.
   await check("administrators are refused by the provider portal and sign in to kite_admin", async () => {
     await adminPage.goto(`${config.origin}/auth/login`);
-    await adminPage.getByLabel("Email address", { exact: true }).fill(config.admin.email);
+    await adminPage.getByLabel("Email or phone", { exact: true }).fill(config.admin.email);
     await adminPage.getByLabel("Password", { exact: true }).fill(config.admin.password);
     await adminPage.getByRole("button", { name: "Sign In", exact: true }).click();
-    await expect(adminPage.getByText("A provider account is required for this portal", { exact: true })).toBeVisible();
+    await expect(adminPage.getByText("Sign in with a provider or team account", { exact: true })).toBeVisible();
     await adminPage.goto(`${config.adminOrigin}/auth/login`);
-    await adminPage.getByLabel("Email address", { exact: true }).fill(config.admin.email);
+    await adminPage.getByLabel("Email or phone", { exact: true }).fill(config.admin.email);
     await adminPage.getByLabel("Password", { exact: true }).fill(config.admin.password);
     await adminPage.getByRole("button", { name: "Sign in to workspace" }).click();
     await expect.poll(() => adminPage.url()).toBe(`${config.adminOrigin}/`);
@@ -379,7 +379,7 @@ try {
     await providerPage.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(providerPage).toHaveURL(/\/auth\/login$/);
     await providerPage.goto(`${config.origin}/auth/forgot-password`);
-    await providerPage.getByLabel("Email address", { exact: true }).fill(config.newProvider.email);
+    await providerPage.getByLabel("Email or phone", { exact: true }).fill(config.newProvider.email);
     const [response] = await Promise.all([
       providerPage.waitForResponse(value => value.url().endsWith("/api/backend/auth/password/forgot") && value.request().method() === "POST"),
       providerPage.getByRole("button", { name: "Request reset instructions", exact: true }).click(),

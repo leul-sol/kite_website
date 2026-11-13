@@ -291,8 +291,8 @@ export const api = {
       { method: "POST", body: JSON.stringify({ memberId }) }),
   revokeTeamAccess: (memberId: string) => request<void>(`/api/v1/auth/team/${encodeURIComponent(memberId)}`, { method: "DELETE" }),
   describeInvitation: (token: string) => request<Invitation>(`/api/v1/auth/team-invite/${encodeURIComponent(token)}`),
-  acceptInvitation: (token: string, password: string) =>
-    request<{ status: string; email: string }>("/api/v1/auth/team-invite/accept", { method: "POST", body: JSON.stringify({ token, password }) }),
+  acceptInvitation: (token: string, password: string, phone?: string | null) =>
+    request<{ status: string; email: string }>("/api/v1/auth/team-invite/accept", { method: "POST", body: JSON.stringify({ token, password, phone: phone ?? undefined }) }),
 
   // ── For signed-in team members ──
   getMyWork: (from: string, to: string) => request<TeamSchedule>(`/api/v1/bookings/team/schedule?from=${from}&to=${to}`),
