@@ -1,0 +1,35 @@
+name: Website CI
+
+# Every push to main and every pull request: typecheck, portal tests and a production build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: website-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Portal tests
+        run: npm run test:portal
+
+      - name: Production build
+        run: npx next build
