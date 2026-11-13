@@ -27,8 +27,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     const field = (name: string) => String(data.get(name) ?? "").trim();
     void run(async () => {
       if (mode === "login") {
-        await api.auth("login", { email: field("email"), password: data.get("password") });
-        window.location.assign("/dashboard");
+        const session = await api.auth("login", { email: field("email"), password: data.get("password") }) as { role?: string };
+        // Team members land on their own work; business owners on the dashboard.
+        window.location.assign(session?.role === "TEAM" ? "/my-work" : "/dashboard");
       } else if (mode === "signup") {
         if (verifiedPhone !== phone) throw new Error("Verify this phone number first.");
         await api.auth("register", { fullName: field("fullName"), email: field("email"), phone, password: data.get("password"), role: "PROVIDER" });

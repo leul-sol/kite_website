@@ -269,18 +269,37 @@ export const api = {
   },
   deletePortfolioPhoto: (id: string, photoId: string) =>
     request<Storefront>(`/api/v1/catalog/storefronts/me/portfolio/${encodeURIComponent(id)}/photos/${encodeURIComponent(photoId)}`, { method: "DELETE" }),
+  // ── Team roster (its own page) and team sign-in access ──
+  getTeam: () => request<TeamMember[]>("/api/v1/catalog/team"),
   addTeamMember: (member: TeamInput) =>
-    request<Storefront>("/api/v1/catalog/storefronts/me/team", { method: "POST", body: JSON.stringify(member) }),
+    request<TeamMember[]>("/api/v1/catalog/team", { method: "POST", body: JSON.stringify(member) }),
   updateTeamMember: (id: string, member: TeamInput) =>
-    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(member) }),
+    request<TeamMember[]>(`/api/v1/catalog/team/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(member) }),
   deleteTeamMember: (id: string) =>
-    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    request<TeamMember[]>(`/api/v1/catalog/team/${encodeURIComponent(id)}`, { method: "DELETE" }),
   uploadTeamPhoto(id: string, file: File) {
     const body = new FormData(); body.set("file", file);
-    return request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}/photo`, { method: "POST", body });
+    return request<TeamMember[]>(`/api/v1/catalog/team/${encodeURIComponent(id)}/photo`, { method: "POST", body });
   },
   removeTeamPhoto: (id: string) =>
-    request<Storefront>(`/api/v1/catalog/storefronts/me/team/${encodeURIComponent(id)}/photo`, { method: "DELETE" }),
+    request<TeamMember[]>(`/api/v1/catalog/team/${encodeURIComponent(id)}/photo`, { method: "DELETE" }),
+  setTeamSkills: (id: string, skills: string[]) =>
+    request<TeamMember[]>(`/api/v1/catalog/team/${encodeURIComponent(id)}/skills`, { method: "PUT", body: JSON.stringify({ skills }) }),
+  getTeamAccess: () => request<TeamAccess[]>("/api/v1/auth/team"),
+  inviteTeamMember: (memberId: string) =>
+    request<{ status: string; email: string; expiresAt: string; devInviteUrl: string | null }>("/api/v1/auth/team/invitations",
+      { method: "POST", body: JSON.stringify({ memberId }) }),
+  revokeTeamAccess: (memberId: string) => request<void>(`/api/v1/auth/team/${encodeURIComponent(memberId)}`, { method: "DELETE" }),
+  describeInvitation: (token: string) => request<Invitation>(`/api/v1/auth/team-invite/${encodeURIComponent(token)}`),
+  acceptInvitation: (token: string, password: string) =>
+    request<{ status: string; email: string }>("/api/v1/auth/team-invite/accept", { method: "POST", body: JSON.stringify({ token, password }) }),
+
+  // ── For signed-in team members ──
+  getMyWork: (from: string, to: string) => request<TeamSchedule>(`/api/v1/bookings/team/schedule?from=${from}&to=${to}`),
+  getTeamHandovers: (bookingId: string) => request<Handover[]>(`/api/v1/bookings/team/handovers/${encodeURIComponent(bookingId)}`),
+  addTeamHandover: (bookingId: string, input: { kind: Handover["kind"]; condition: Handover["condition"]; note: string }) =>
+    request<Handover>(`/api/v1/bookings/team/handovers/${encodeURIComponent(bookingId)}`, { method: "POST", body: JSON.stringify(input) }),
+  getItemName: async (id: string) => (await request<{ name: string }>(`/api/v1/catalog/items/${encodeURIComponent(id)}`)).name,
   async getProviderProfile() {
     return request<{
       providerId: string;
@@ -309,7 +328,13 @@ export type StorefrontDetails = {
   offerings: Offering[];
 };
 export type PortfolioEntry = { id: string; title: string; eventDate: string | null; description: string; photos: string[] };
-export type TeamMember = { id: string; name: string; role: string; bio: string; lead: boolean; photoUrl: string | null };
+export type TeamMember = { id: string; name: string; role: string; bio: string; lead: boolean; photoUrl: string | null;
+  skills?: string[]; email?: string | null; onStorefront?: boolean };
+export type TeamAccess = { memberId: string; status: "INVITED" | "EXPIRED" | "ACTIVE"; email: string; invitedAt: string | null; expiresAt: string | null; joinedAt: string | null };
+export type Invitation = { businessName: string; memberName: string; email: string; expiresAt: string };
+export type TeamSchedule = { memberId: string; from: string; to: string; timeOff: TimeOff[];
+  bookings: { id: string; startDate: string; endDate: string; status: string; crew: string[]; items: { itemId: string; quantity: number }[] }[];
+  team: { id: string; name: string; role: string; photoUrl: string | null }[] };
 export type Storefront = StorefrontDetails & {
   providerId: string;
   logoUrl: string | null;
@@ -320,7 +345,7 @@ export type Storefront = StorefrontDetails & {
   packageCount: number;
 };
 export type PortfolioInput = { title: string; eventDate: string | null; description: string };
-export type TeamInput = { name: string; role: string; bio: string; lead: boolean };
+export type TeamInput = { name: string; role: string; bio: string; lead: boolean; email?: string; onStorefront?: boolean };
 
 export type ConversationSummary = {
   id: string; otherId: string; otherName: string; itemId: string | null;

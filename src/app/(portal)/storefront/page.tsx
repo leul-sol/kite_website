@@ -63,7 +63,7 @@ export default function StorefrontPage() {
       <Identity profile={profile} />
     </div>
     <Portfolio entries={store.portfolio} busy={busy} run={run} />
-    <Team members={store.team} busy={busy} run={run} />
+    <TeamSummary members={store.team} />
   </div>;
 }
 
@@ -224,56 +224,24 @@ function WorkFields({ value, onChange }: { value: { title: string; eventDate: st
   </div>;
 }
 
-function Team({ members, busy, run }: { members: TeamMember[]; busy: boolean; run: Run }) {
-  const empty = { name: "", role: "", bio: "", lead: false };
-  const [draft, setDraft] = useState(empty);
-  const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [edit, setEdit] = useState(empty);
+/** The team is managed on its own page; the storefront only shows who customers see. */
+function TeamSummary({ members }: { members: TeamMember[] }) {
   return <section className={card}>
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <div><h2 className="font-semibold">Team</h2>
-        <p className="text-sm text-muted-foreground">The people behind your business. Names, roles and photos are shown to customers; contact details are not.</p></div>
-      {members.length < 30 && !adding && <Button size="sm" onClick={() => setAdding(true)}><Plus className="size-4" />Add member</Button>}
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="font-semibold">Team</h2>
+        <p className="text-sm text-muted-foreground">{members.length
+          ? `${members.length} ${members.length === 1 ? "person is" : "people are"} shown to customers. Choose who appears on the Team page.`
+          : "Nobody is shown yet. Add your people and choose who customers see on the Team page."}</p>
+      </div>
+      <Button asChild variant="outline"><Link href="/team">Manage team</Link></Button>
     </div>
-    {adding && <form className="space-y-3 rounded-lg border border-dashed p-4" onSubmit={async e => { e.preventDefault(); if (await run(() => api.addTeamMember(draft), "Team member added.")) { setDraft(empty); setAdding(false); } }}>
-      <MemberFields value={draft} onChange={setDraft} />
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setAdding(false)}>Cancel</Button><Button disabled={busy || !draft.name.trim() || !draft.role.trim()}>Add member</Button></div>
-    </form>}
-    {members.length === 0 && !adding && <p className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">No team members yet.</p>}
-    <ul className="grid gap-3 md:grid-cols-2">
-      {members.map(m => <li key={m.id} className="rounded-lg border p-4">
-        {editing === m.id ? <form className="space-y-3" onSubmit={async e => { e.preventDefault(); if (await run(() => api.updateTeamMember(m.id, edit), "Team member updated.")) setEditing(null); }}>
-          <MemberFields value={edit} onChange={setEdit} />
-          <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel</Button><Button disabled={busy}>Save</Button></div>
-        </form> : <div className="flex gap-3">
-          <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/10 text-lg font-semibold text-primary">
-            {m.photoUrl ? <img src={photoUrl(m.photoUrl)} alt={m.name} className="size-full object-cover" /> : <span>{m.name.slice(0, 1).toUpperCase()}</span>}
-          </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <div>
-              <p className="flex items-center gap-2 font-medium">{m.name}{m.lead && <Badge variant="secondary" className="gap-1"><Star className="size-3" />Lead</Badge>}</p>
-              <p className="text-sm text-muted-foreground">{m.role}</p>
-              {m.bio && <p className="mt-1 text-sm">{m.bio}</p>}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <ImagePicker label={m.photoUrl ? "Replace photo" : "Add photo"} busy={busy} onPick={f => void run(() => api.uploadTeamPhoto(m.id, f), "Photo updated.")} />
-              {m.photoUrl && <Button size="sm" variant="ghost" disabled={busy} onClick={() => void run(() => api.removeTeamPhoto(m.id), "Photo removed.")}>Remove photo</Button>}
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => { setEditing(m.id); setEdit({ name: m.name, role: m.role, bio: m.bio, lead: m.lead }); }}>Edit</Button>
-              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => { if (confirm(`Remove ${m.name} from your team?`)) void run(() => api.deleteTeamMember(m.id), "Team member removed."); }}>Remove</Button>
-            </div>
-          </div>
-        </div>}
-      </li>)}
-    </ul>
+    {members.length > 0 && <div className="flex flex-wrap gap-3">
+      {members.map(m => <div key={m.id} className="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm">
+        <span className="grid size-7 place-items-center overflow-hidden rounded-full bg-primary/10 text-xs font-semibold text-primary">
+          {m.photoUrl ? <img src={photoUrl(m.photoUrl)} alt="" className="size-full object-cover" /> : m.name.slice(0, 1).toUpperCase()}</span>
+        {m.name}{m.lead && <Star className="size-3 text-warning" />}
+      </div>)}
+    </div>}
   </section>;
-}
-
-function MemberFields({ value, onChange }: { value: { name: string; role: string; bio: string; lead: boolean }; onChange: (v: { name: string; role: string; bio: string; lead: boolean }) => void }) {
-  return <div className="grid gap-3 sm:grid-cols-2">
-    <Field label="Name"><input className={controlClass} required maxLength={120} value={value.name} onChange={e => onChange({ ...value, name: e.target.value })} /></Field>
-    <Field label="Role"><input className={controlClass} required maxLength={120} placeholder="Lead decorator" value={value.role} onChange={e => onChange({ ...value, role: e.target.value })} /></Field>
-    <Field label="Short bio" className="sm:col-span-2"><textarea className={area} maxLength={500} value={value.bio} onChange={e => onChange({ ...value, bio: e.target.value })} /></Field>
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-[var(--primary)]" checked={value.lead} onChange={e => onChange({ ...value, lead: e.target.checked })} />Team lead</label>
-  </div>;
 }

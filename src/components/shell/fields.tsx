@@ -7,11 +7,14 @@ export const controlClass = "flex h-9 w-full min-w-0 rounded-md border border-in
 export function Field({ label, hint, className, children }: {
   label: React.ReactNode; hint?: React.ReactNode; className?: string; children: React.ReactNode;
 }) {
-  return <label className={cn("grid gap-1.5 text-sm font-medium", className)}>
-    <span>{label}</span>
-    {children}
-    {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
-  </label>;
+  // The hint sits outside the label so a field's accessible name is just its label.
+  return <div className={cn("grid gap-1.5", className)}>
+    <label className="grid gap-1.5 text-sm font-medium">
+      <span>{label}</span>
+      {children}
+    </label>
+    {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+  </div>;
 }
 
 export function FormError({ children }: { children: React.ReactNode }) {
