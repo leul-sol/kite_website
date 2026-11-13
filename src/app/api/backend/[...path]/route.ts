@@ -27,7 +27,11 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
   if (mutates && req.headers.get("origin") !== expectedOrigin) {
     return NextResponse.json({ error: "Request origin is not allowed" }, { status: 403 });
   }
-  const authAction = route.startsWith("auth/") ? route.slice(5) : null;
+  // auth/team/** is the provider managing team sign-ins (a normal signed-in call).
+  // auth/team-invite/** is public: the invited person opening or accepting their link.
+  const teamManagement = /^auth\/team(\/|$)/.test(route);
+  const invitation = /^auth\/team-invite\/(accept|[0-9a-f]{64})$/.test(route);
+  const authAction = route.startsWith("auth/") && !teamManagement && !invitation ? route.slice(5) : null;
   if (!/^(auth|catalog|bookings|wallet|providers|messages)(\/|$)/.test(route) || adminOnly.some(([method, pattern]) => (!method || method === req.method) && pattern.test(route)) || path.some(p => !/^[a-zA-Z0-9_-]+$/.test(p))) {
     return NextResponse.json({ error: "Unknown endpoint" }, { status: 404 });
   }
@@ -41,7 +45,8 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     const value = req.headers.get(name);
     if (value) headers.set(name, value);
   }
-  if (!authAction) {
+  if (invitation && req.method !== (route.endsWith("/accept") ? "POST" : "GET")) return new NextResponse(null, { status: 405 });
+  if (!authAction && !invitation) {
     const access = req.cookies.get(names.access)?.value;
     if (!access) return NextResponse.json({ error: "Sign in to continue" }, { status: 401 });
     headers.set("Authorization", `Bearer ${access}`);
@@ -82,10 +87,10 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     }
     if (["login", "register", "refresh"].includes(authAction ?? "") && upstream.ok) {
       const session = await upstream.json();
-      // Administrators use kite_admin; this portal is for provider accounts only.
-      if (session.role !== "PROVIDER") {
+      // Administrators use kite_admin; this portal is for providers and their team members.
+      if (session.role !== "PROVIDER" && session.role !== "TEAM") {
         await fetch(`${base}/api/v1/auth/logout`, { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Fingerprint": fingerprint }, body: JSON.stringify({ refreshToken: session.refreshToken }), signal: AbortSignal.timeout(5000) }).catch(() => undefined);
-        return clear(NextResponse.json({ error: "A provider account is required for this portal" }, { status: 403 }));
+        return clear(NextResponse.json({ error: "Sign in with a provider or team account" }, { status: 403 }));
       }
       const response = NextResponse.json({ userId: session.userId, role: session.role });
       // Access cookies live as long as the refresh session; the gateway enforces JWT expiry.

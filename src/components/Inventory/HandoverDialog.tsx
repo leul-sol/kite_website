@@ -14,7 +14,9 @@ import ReportIssueDialog from "./ReportIssueDialog";
  * Check-out and check-in notes for a booking. Notes cannot be edited afterwards, so they can
  * back up a dispute. Finding issues on check-in offers to take damaged units out of service.
  */
-export default function HandoverDialog({ bookingId, onClose }: { bookingId: string; onClose: () => void }) {
+export default function HandoverDialog({ bookingId, onClose, scope = "provider" }: { bookingId: string; onClose: () => void; scope?: "provider" | "team" }) {
+  const read = scope === "team" ? api.getTeamHandovers : api.getHandovers;
+  const write = scope === "team" ? api.addTeamHandover : api.addHandover;
   const [notes, setNotes] = useState<Handover[]>(), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [kind, setKind] = useState<Handover["kind"]>("CHECK_OUT"), [condition, setCondition] = useState<Handover["condition"]>("GOOD");
   const [note, setNote] = useState("");
@@ -22,17 +24,18 @@ export default function HandoverDialog({ bookingId, onClose }: { bookingId: stri
   const [offerReport, setOfferReport] = useState(false);
 
   useEffect(() => {
-    api.getHandovers(bookingId).then(list => { setNotes(list); if (list.some(n => n.kind === "CHECK_OUT")) setKind("CHECK_IN"); })
+    read(bookingId).then(list => { setNotes(list); if (list.some(n => n.kind === "CHECK_OUT")) setKind("CHECK_IN"); })
       .catch(cause => setError((cause as Error).message));
-  }, [bookingId]);
+  }, [bookingId, read]);
 
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try {
-      const saved = await api.addHandover(bookingId, { kind, condition, note });
+      const saved = await write(bookingId, { kind, condition, note });
       setNotes(list => [...(list ?? []), saved]); setNote("");
       toast.success(kind === "CHECK_OUT" ? "Check-out recorded" : "Check-in recorded");
-      setOfferReport(kind === "CHECK_IN" && condition === "ISSUES");
+      // Team members can't change inventory; the owner sees the note and takes units out of service.
+      setOfferReport(scope === "provider" && kind === "CHECK_IN" && condition === "ISSUES");
       if (kind === "CHECK_OUT") setKind("CHECK_IN");
       setCondition("GOOD");
     } catch (cause) { setError((cause as Error).message); } finally { setBusy(false); }

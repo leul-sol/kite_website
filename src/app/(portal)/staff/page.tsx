@@ -26,13 +26,12 @@ export default function StaffPage() {
   const refresh = () => setRevision(value => value + 1);
 
   return <div className="fade-in">
-    <PageHeader title="Staff" description="Plan who works each booking and keep track of time off."
+    <PageHeader title="Schedule" description="Plan who works each booking and keep track of time off."
       actions={<Button variant="outline" disabled={!staff?.length} onClick={() => setTimeOffOpen(true)}><CalendarOff className="size-4" />Add time off</Button>} />
     <Tabs value={tab} onValueChange={setTab} className="gap-4">
-      <TabsList><TabsTrigger value="schedule">Schedule</TabsTrigger><TabsTrigger value="time-off">Time off</TabsTrigger><TabsTrigger value="team">Team &amp; skills</TabsTrigger></TabsList>
+      <TabsList><TabsTrigger value="schedule">Schedule</TabsTrigger><TabsTrigger value="time-off">Time off</TabsTrigger></TabsList>
       <TabsContent value="schedule"><WeekSchedule revision={revision} onStaff={setStaff} onChanged={refresh} /></TabsContent>
       <TabsContent value="time-off"><TimeOffList revision={revision} onChanged={refresh} onAdd={() => setTimeOffOpen(true)} /></TabsContent>
-      <TabsContent value="team"><TeamSkills revision={revision} onChanged={refresh} /></TabsContent>
     </Tabs>
     {timeOffOpen && staff && <TimeOffDialog staff={staff} onClose={() => setTimeOffOpen(false)} onSaved={refresh} />}
   </div>;
@@ -87,8 +86,8 @@ function WeekSchedule({ revision, onStaff, onChanged }: { revision: number; onSt
     </section>}
 
     {data && data.staff.length === 0 && <EmptyState icon={<Users className="size-5" />} title="Add your team first"
-      description="Add the people who work your events in Storefront → Team. Then assign them to bookings here."
-      action={<Button asChild><Link href="/storefront">Go to Storefront</Link></Button>} />}
+      description="Add the people who work your events on the Team page. Then assign them to bookings here."
+      action={<Button asChild><Link href="/team">Go to Team</Link></Button>} />}
 
     {data && data.staff.length > 0 && <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
       <table className="w-full min-w-[760px] table-fixed text-sm">
@@ -166,46 +165,6 @@ function TimeOffList({ revision, onChanged, onAdd }: { revision: number; onChang
       })}
     </ul>}
     <p className="text-xs text-muted-foreground">Showing the next 3 months.</p>
-  </div>;
-}
-
-function TeamSkills({ revision, onChanged }: { revision: number; onChanged: () => void }) {
-  const [staff, setStaff] = useState<StaffMember[]>(), [error, setError] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, string>>({}), [saving, setSaving] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    const from = today();
-    api.getStaffSchedule(from, from).then(result => { if (active) { setStaff(result.staff); setDrafts(Object.fromEntries(result.staff.map(m => [m.id, m.skills.join(", ")]))); } })
-      .catch(cause => { if (active) setError((cause as Error).message); });
-    return () => { active = false; };
-  }, [revision]);
-
-  return <div className="space-y-3">
-    <p className="text-sm text-muted-foreground">Skills help you pick the right person. Only you see them; customers see name, role and photo. Add or remove people in <Link className="font-medium text-primary underline-offset-4 hover:underline" href="/storefront">Storefront → Team</Link>.</p>
-    {error && <FormError>{error}</FormError>}
-    {!staff && !error && <Skeleton className="h-32" />}
-    {staff?.length === 0 && <EmptyState icon={<Users className="size-5" />} title="No team members yet" action={<Button asChild><Link href="/storefront">Add team in Storefront</Link></Button>} />}
-    {staff && staff.length > 0 && <ul className="grid gap-3 md:grid-cols-2">
-      {staff.map(member => {
-        const draft = drafts[member.id] ?? "", changed = parseSkills(draft).join(",") !== member.skills.join(",");
-        return <li key={member.id} className="space-y-3 rounded-xl border bg-card p-4 shadow-xs">
-          <div className="flex items-center gap-3"><StaffAvatar member={member} className="size-10" />
-            <div className="min-w-0"><p className="truncate font-medium">{member.name}</p><p className="truncate text-xs text-muted-foreground">{member.role}</p></div></div>
-          <div className="flex flex-wrap gap-1.5">{member.skills.length ? member.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>) : <span className="text-xs text-muted-foreground">No skills yet</span>}</div>
-          <form className="flex items-end gap-2" onSubmit={async event => {
-            event.preventDefault(); setSaving(member.id); setError("");
-            try { const updated = await api.setStaffSkills(member.id, parseSkills(draft)); setStaff(updated); toast.success(`Skills saved for ${member.name}`); onChanged(); }
-            catch (cause) { setError((cause as Error).message); } finally { setSaving(null); }
-          }}>
-            <Field label="Skills" hint="Separate with commas, up to 10." className="flex-1">
-              <input className={controlClass} placeholder="Photography, Driving, Setup" value={draft} maxLength={450}
-                onChange={e => setDrafts(d => ({ ...d, [member.id]: e.target.value }))} />
-            </Field>
-            <Button size="sm" className="mb-6" disabled={!changed || saving === member.id}>Save</Button>
-          </form>
-        </li>;
-      })}
-    </ul>}
   </div>;
 }
 

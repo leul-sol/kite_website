@@ -12,11 +12,11 @@ import { cn } from "@/lib/utils";
 import { NAV } from "./nav";
 import { signOut, type ShellProfile } from "./useProviderShell";
 
-export function KiteBrand({ className }: { className?: string }) {
-  return <Link href="/dashboard" className={cn("flex items-center gap-2.5 px-2", className)}>
+export function KiteBrand({ className, href = "/dashboard", label = "Provider" }: { className?: string; href?: string; label?: string }) {
+  return <Link href={href} className={cn("flex items-center gap-2.5 px-2", className)}>
     <Image src="/kite-mark.png" alt="" width={30} height={30} className="size-7 object-contain" priority />
     <span className="text-lg font-semibold tracking-tight">Kite</span>
-    <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-medium uppercase tracking-wide">Provider</Badge>
+    <Badge variant="secondary" className="rounded-full px-2 text-[10px] font-medium uppercase tracking-wide">{label}</Badge>
   </Link>;
 }
 

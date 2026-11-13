@@ -60,7 +60,7 @@ export default function AssignStaffDialog({ bookingId, start, end, title, onClos
         <Users className="size-5 text-muted-foreground" />
         <p className="text-sm font-medium">No team members yet</p>
         <p className="text-xs text-muted-foreground">Add the people who work your events first.</p>
-        <Button asChild size="sm" variant="outline"><Link href="/storefront">Add team in Storefront</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link href="/team">Add your team</Link></Button>
       </div>}
       {staff.length > 0 && <ul className="max-h-80 space-y-1.5 overflow-y-auto" aria-label="Team members">
         {staff.map(member => {
