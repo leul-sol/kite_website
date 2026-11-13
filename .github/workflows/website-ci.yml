@@ -28,8 +28,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Portal tests
-        run: npm run test:portal
-
+      # The portal integration test starts the built site, so build first.
       - name: Production build
         run: npx next build
+
+      - name: Portal tests
+        run: npm run test:portal
