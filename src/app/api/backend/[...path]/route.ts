@@ -4,7 +4,9 @@ export const runtime = "nodejs";
 const base = (process.env.KITE_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
 const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" as const, path: "/" };
 const names = { access: "kite_access", refresh: "kite_refresh", fingerprint: "kite_device" };
-const publicActions = new Set(["login", "register", "otp/send", "otp/verify", "password/forgot", "password/reset/confirm"]);
+const publicActions = new Set(["login", "register", "otp/send", "otp/verify", "password/forgot", "password/reset/confirm", "identity/check", "google", "google/complete", "google/config"]);
+// Actions that may return a session; cookies are set only when tokens come back.
+const sessionActions = new Set(["login", "register", "refresh", "google", "google/complete"]);
 // Administration endpoints belong to kite_admin. The gateway enforces roles too, but this
 // portal never forwards them, so admin traffic cannot be routed through provider sessions.
 const adminOnly: Array<[string | null, RegExp]> = [
@@ -38,7 +40,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
   if (authAction && (!publicActions.has(authAction) && !["refresh", "logout"].includes(authAction))) {
     return NextResponse.json({ error: "Unknown authentication action" }, { status: 404 });
   }
-  if (authAction && req.method !== "POST") return new NextResponse(null, { status: 405 });
+  if (authAction && req.method !== (authAction === "google/config" ? "GET" : "POST")) return new NextResponse(null, { status: 405 });
   const fingerprint = req.cookies.get(names.fingerprint)?.value ?? crypto.randomUUID();
   const headers = new Headers({ "X-Session-Fingerprint": fingerprint, "X-Device-Platform": "web", "X-Device-Model": "Kite provider portal" });
   for (const name of ["content-type", "idempotency-key"]) {
@@ -85,8 +87,10 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     if (authAction === "logout") {
       return clear(NextResponse.json({ message: "Signed out" }));
     }
-    if (["login", "register", "refresh"].includes(authAction ?? "") && upstream.ok) {
+    if (sessionActions.has(authAction ?? "") && upstream.ok) {
       const session = await upstream.json();
+      // Google sign-up asks for a phone first: no session yet, pass the next step through.
+      if (!session.accessToken) return NextResponse.json(session, { headers: { "Cache-Control": "no-store" } });
       // Administrators use kite_admin; this portal is for providers and their team members.
       if (session.role !== "PROVIDER" && session.role !== "TEAM") {
         await fetch(`${base}/api/v1/auth/logout`, { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Fingerprint": fingerprint }, body: JSON.stringify({ refreshToken: session.refreshToken }), signal: AbortSignal.timeout(5000) }).catch(() => undefined);

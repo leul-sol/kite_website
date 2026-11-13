@@ -102,7 +102,7 @@ test("provider portal session and private document boundary", { timeout: 60000 }
         const before = seen.filter(r => r.path === "/api/v1/auth/logout").length;
         const response = await post("auth/login", { email });
         assert.equal(response.status, 403);
-        assert.equal((await response.json()).error, "A provider account is required for this portal");
+        assert.equal((await response.json()).error, "Sign in with a provider or team account");
         assert.equal(seen.filter(r => r.path === "/api/v1/auth/logout").length, before + 1);
         assert.ok(!jar.has("kite_access"));
       }
