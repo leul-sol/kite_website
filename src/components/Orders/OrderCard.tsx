@@ -1,5 +1,5 @@
 "use client";
-import { CalendarDays, User, UserPlus } from "lucide-react";
+import { CalendarDays, ClipboardCheck, User, UserPlus } from "lucide-react";
 import type { StaffMember } from "@/services/api";
 import { canAssignStaff } from "@/services/staff";
 import StaffAvatar from "@/components/Staff/StaffAvatar";
@@ -8,19 +8,23 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isChangeRequest, orderActions, type Order, type OrderTarget } from "../../services/orders";
 
+/** Check-out / check-in notes make sense once a booking is confirmed. */
+export const HANDOVER_STATUSES = ["CONFIRMED", "PICKED_UP", "ACTIVE", "COMPLETED"];
+
 export const STATUS_STYLE: Record<string, string> = {
   REQUESTED: "bg-muted text-muted-foreground", PAID: "bg-primary/10 text-primary", CONFIRMED: "bg-primary/10 text-primary",
   ACTIVE: "bg-success/10 text-success", PICKED_UP: "bg-success/10 text-success", COMPLETED: "bg-success/10 text-success",
   CANCELLATION_REQUESTED: "bg-warning/10 text-warning", RESCHEDULE_REQUESTED: "bg-warning/10 text-warning",
 };
 
-export default function OrderCard({ order, busy, onAction, onReview, staff, onAssign }: {
+export default function OrderCard({ order, busy, onAction, onReview, staff, onAssign, onHandover }: {
   order: Order; busy: boolean;
   onAction: (order: Order, target: OrderTarget) => void;
   onReview: (order: Order) => void;
   /** People assigned to this booking; undefined when the schedule is not loaded. */
   staff?: StaffMember[];
   onAssign?: (order: Order) => void;
+  onHandover?: (order: Order) => void;
 }) {
   const actions = orderActions(order.status);
   return <article className="space-y-3 rounded-xl border bg-card p-4 shadow-xs transition hover:shadow-sm">
@@ -45,6 +49,8 @@ export default function OrderCard({ order, busy, onAction, onReview, staff, onAs
       <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busy} onClick={() => onAssign(order)}>
         <UserPlus className="size-3.5" />{staff && staff.length ? "Change staff" : "Assign staff"}</Button>
     </div>}
+    {onHandover && HANDOVER_STATUSES.includes(order.status) && <Button type="button" size="sm" variant="ghost" className="h-7 w-full justify-start px-2 text-xs text-muted-foreground"
+      onClick={() => onHandover(order)}><ClipboardCheck className="size-3.5" />Handover notes</Button>}
     <div className="flex items-center justify-between border-t pt-3">
       <span className="text-xs text-muted-foreground">Total</span>
       <strong className="tabular-nums">{order.total}</strong>
