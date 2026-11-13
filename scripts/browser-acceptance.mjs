@@ -50,11 +50,11 @@ try {
   const originalBytes = await (await context.request.get(config.origin + config.photoUrl.replace("/api/v1/", "/api/backend/"))).body();
   let dialog;
   await check("creating a listing opens an empty photo manager without creating duplicate listings", async () => {
-    await page.getByRole("button", { name: "Add Listing", exact: true }).click();
+    await page.getByRole("button", { name: "Add listing", exact: true }).click();
     dialog = page.getByRole("dialog", { name: "Create listing", exact: true });
     await dialog.getByLabel("Listing name", { exact: true }).fill(`Browser acceptance ${Date.now()}`);
     await dialog.getByLabel("Description", { exact: true }).fill("Synthetic browser listing");
-    await dialog.getByLabel("Daily rate (ETB)", { exact: true }).fill("100.01");
+    await dialog.getByLabel("Price per day (ETB)", { exact: true }).fill("100.01");
     await dialog.getByLabel("Stock quantity", { exact: true }).fill("3");
     await dialog.getByRole("button", { name: "Create listing", exact: true }).click();
     await expect(dialog.getByText("No uploaded photos yet.", { exact: true })).toBeVisible();
@@ -100,7 +100,7 @@ try {
     await expect(images()).toHaveCount(1);
     await dialog.getByRole("button", { name: "Done", exact: true }).click();
     await page.reload();
-    const row = page.getByRole("row").filter({ hasText: "Browser acceptance" });
+    const row = page.getByRole("listitem").filter({ hasText: "Browser acceptance" });
     await expect(row).toHaveCount(1);
     await expect(row.getByRole("img")).toHaveAttribute("src", secondUrl);
     await row.getByRole("button", { name: "Manage photos", exact: true }).click();
@@ -135,9 +135,9 @@ try {
     await expect(dialog.getByRole("button", { name: "Done", exact: true })).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole("row").filter({ hasText: "Browser acceptance" }).getByRole("button", { name: "Manage photos", exact: true })).toBeFocused();
+    await expect(page.getByRole("listitem").filter({ hasText: "Browser acceptance" }).getByRole("button", { name: "Manage photos", exact: true })).toBeFocused();
   });
-  const newRow = () => page.getByRole("row").filter({ hasText: "Browser acceptance" });
+  const newRow = () => page.getByRole("listitem").filter({ hasText: "Browser acceptance" });
   let listingId;
   await check("listing editor saves price, deposit and stock while preserving uploaded photos", async () => {
     const src = await newRow().getByRole("img").getAttribute("src");
@@ -146,7 +146,7 @@ try {
     const editor = page.getByRole("dialog", { name: "Edit listing", exact: true });
     await expect(editor.getByLabel("Listing name", { exact: true })).toBeVisible();
     await editor.getByLabel("Description", { exact: true }).fill("Updated in Chromium");
-    await editor.getByLabel("Daily rate (ETB)", { exact: true }).fill("150.25");
+    await editor.getByLabel("Price per day (ETB)", { exact: true }).fill("150.25");
     await editor.getByLabel("Security deposit (ETB)", { exact: true }).fill("50.10");
     await editor.getByLabel("Stock quantity", { exact: true }).fill("4");
     await editor.getByRole("button", { name: "Save listing", exact: true }).click();
@@ -163,7 +163,7 @@ try {
     await editor.getByLabel("Active listing", { exact: true }).uncheck();
     await editor.getByRole("button", { name: "Save listing", exact: true }).click();
     await expect(editor.getByRole("group", { name: "Confirm listing availability change" })).toBeVisible();
-    await expect(newRow().getByRole("cell", { name: "Active", exact: true })).toHaveCount(1);
+    await expect(newRow()).not.toContainText("Inactive");
     await editor.getByRole("button", { name: "Confirm changes", exact: true }).click();
     await expect(editor).toHaveCount(0); await expect(newRow()).toContainText("Inactive");
     expect((await context.request.get(config.origin + src)).status()).toBe(404);
@@ -215,7 +215,7 @@ try {
   await check("phone-sized inventory and photo dialog fit the viewport", async () => {
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await page.getByRole("row").filter({ hasText: "Browser acceptance" }).getByRole("button", { name: "Manage photos", exact: true }).click();
+    await page.getByRole("listitem").filter({ hasText: "Browser acceptance" }).getByRole("button", { name: "Manage photos", exact: true }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Cover photo", { exact: false })).toBeVisible();
     const box = await dialog.boundingBox();

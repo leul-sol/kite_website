@@ -1,10 +1,14 @@
 "use client";
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 import { api } from "@/services/api";
-import styles from "@/app/auth/auth.module.css";
+import { Button } from "@/components/ui/button";
+import { Field, FormError, controlClass } from "@/components/shell/fields";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
+const link = "font-medium text-primary underline-offset-4 hover:underline";
+
 export default function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,36 +44,55 @@ export default function AuthForm({ mode }: { mode: Mode }) {
       }
     });
   }
-  const title = { login: "Welcome Back", signup: "Join Kite", forgot: "Reset Password", reset: "Choose a new password" }[mode];
-  return <div>
-    <h2 className="h2">{title}</h2>
-    <p className="text-body" style={{ margin: "16px 0 24px" }}>{mode === "signup" ? "Create a provider account, then complete your business verification." : mode === "login" ? "Sign in to manage your business." : "Follow your reset instructions to recover access."}</p>
+  const title = { login: "Welcome back", signup: "Create your provider account", forgot: "Reset your password", reset: "Choose a new password" }[mode];
+  const subtitle = { login: "Sign in to manage your business.", signup: "Then complete your business verification.",
+    forgot: "We'll send reset instructions to your email.", reset: "Follow your reset instructions to recover access." }[mode];
+  const phoneVerified = mode === "signup" && verifiedPhone !== "" && verifiedPhone === phone;
+
+  return <div className="space-y-6">
+    <div className="space-y-1.5">
+      <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    </div>
     <form onSubmit={submit}>
-      <fieldset disabled={busy} style={{ border: 0, padding: 0 }}>
+      <fieldset disabled={busy} className="grid gap-4">
         {mode === "signup" && <>
-          <label className={styles.formGroup} style={{ display: "block" }}>Full name<input name="fullName" autoComplete="name" className={styles.input} required maxLength={200} /></label>
-          <label className={styles.formGroup} style={{ display: "block" }}>Phone number<input type="tel" name="phone" autoComplete="tel" className={styles.input} required placeholder="+251…" value={phone} onChange={e => { setPhone(e.target.value); setVerifiedPhone(""); setOtpSent(false); }} /></label>
-          <button type="button" className="btn-secondary" onClick={() => void run(async () => { if (!phone.trim()) throw new Error("Enter your phone number."); await api.auth("otp/send", { phone }); setOtpSent(true); setMessage("Verification code requested. Check your phone."); })}>Send verification code</button>
-          {otpSent && verifiedPhone !== phone && <div style={{ margin: "16px 0" }}>
-            <label>Verification code<input name="otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} className={styles.input} /></label>
-            <button type="button" className="btn-secondary" onClick={event => {
+          <Field label="Full name"><input name="fullName" autoComplete="name" className={controlClass} required maxLength={200} /></Field>
+          <Field label="Phone number" hint={phoneVerified ? <span className="flex items-center gap-1 text-success"><CheckCircle2 className="size-3.5" />Phone verified</span> : undefined}>
+            <div className="flex gap-2">
+              <input type="tel" name="phone" autoComplete="tel" className={controlClass} required placeholder="+251…" value={phone}
+                onChange={e => { setPhone(e.target.value); setVerifiedPhone(""); setOtpSent(false); }} />
+              {!phoneVerified && <Button type="button" variant="outline" className="shrink-0" onClick={() => void run(async () => {
+                if (!phone.trim()) throw new Error("Enter your phone number."); await api.auth("otp/send", { phone }); setOtpSent(true); setMessage("Verification code requested. Check your phone.");
+              })}>{otpSent ? "Resend code" : "Send verification code"}</Button>}
+            </div>
+          </Field>
+          {otpSent && !phoneVerified && <div className="flex items-end gap-2 rounded-lg bg-muted/60 p-3">
+            <Field label="Verification code" className="flex-1"><input name="otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} className={`${controlClass} tracking-[0.4em]`} /></Field>
+            <Button type="button" onClick={event => {
               const code = new FormData(event.currentTarget.form!).get("otp");
               void run(async () => { await api.auth("otp/verify", { phone, code }); setVerifiedPhone(phone); setMessage("Phone verified. Complete your account details below."); });
-            }}>Verify phone</button>
+            }}>Verify phone</Button>
           </div>}
         </>}
-        {mode !== "reset" && <label className={styles.formGroup} style={{ display: "block", marginTop: 16 }}>Email address<input name="email" type="email" autoComplete="email" className={styles.input} required /></label>}
-        {mode === "reset" && <label className={styles.formGroup} style={{ display: "block" }}>Reset token (if not included in your link)<input name="token" autoComplete="off" className={styles.input} /></label>}
-        {mode !== "forgot" && <label className={styles.formGroup} style={{ display: "block" }}>Password<input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 8} className={styles.input} required /></label>}
-        <button className="btn-primary" style={{ width: "100%" }} disabled={mode === "signup" && verifiedPhone !== phone}>{busy ? "Please wait…" : mode === "login" ? "Sign In" : mode === "signup" ? "Create provider account" : mode === "forgot" ? "Request reset instructions" : "Save new password"}</button>
+        {mode !== "reset" && <Field label="Email address"><input name="email" type="email" autoComplete="email" className={controlClass} required placeholder="you@business.com" /></Field>}
+        {mode === "reset" && <Field label="Reset token (if not included in your link)"><input name="token" autoComplete="off" className={controlClass} /></Field>}
+        {mode !== "forgot" && <Field label={mode === "login" ? <span className="flex justify-between">Password<Link className={`${link} text-xs font-normal`} href="/auth/forgot-password">Forgot password?</Link></span> : "Password"}
+          hint={mode === "login" ? undefined : "At least 8 characters."}>
+          <input name="password" type="password" aria-label="Password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 8} className={controlClass} required />
+        </Field>}
+        {error && <FormError>{error}</FormError>}
+        {message && <p role="status" className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-primary">{message}</p>}
+        <Button className="w-full" size="lg" disabled={mode === "signup" && !phoneVerified}>
+          {busy ? "Please wait…" : mode === "login" ? "Sign In" : mode === "signup" ? "Create provider account" : mode === "forgot" ? "Request reset instructions" : "Save new password"}
+        </Button>
       </fieldset>
     </form>
-    {error && <p role="alert" style={{ color: "var(--error)", marginTop: 16 }}>{error}</p>}
-    {message && <p role="status" style={{ marginTop: 16 }}>{message}</p>}
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 24 }}>
-      {mode !== "login" && <Link className={styles.authLink} href="/auth/login">Sign in</Link>}
-      {mode === "login" && <><Link className={styles.authLink} href="/auth/signup">Create provider account</Link><Link className={styles.authLink} href="/auth/forgot-password">Forgot password?</Link></>}
-      {mode === "forgot" && <Link className={styles.authLink} href="/auth/reset-password">I have a reset token</Link>}
-    </div>
+    <p className="text-center text-sm text-muted-foreground">
+      {mode === "login" && <>New to Kite? <Link className={link} href="/auth/signup">Create provider account</Link></>}
+      {mode === "signup" && <>Already have an account? <Link className={link} href="/auth/login">Sign in</Link></>}
+      {mode === "forgot" && <><Link className={link} href="/auth/login">Sign in</Link> · <Link className={link} href="/auth/reset-password">I have a reset token</Link></>}
+      {mode === "reset" && <Link className={link} href="/auth/login">Sign in</Link>}
+    </p>
   </div>;
 }

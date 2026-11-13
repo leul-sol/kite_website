@@ -1,16 +1,10 @@
 "use client";
-
+import { PageHeader } from "@/components/shell/PageHeader";
 import OrderBoard from "@/components/Orders/OrderBoard";
 
 export default function OrdersPage() {
-  return (
-    <div className="fade-in">
-      <header style={{ marginBottom: 'var(--space-2xl)' }}>
-        <h1 className="h1">Orders & Fulfillment</h1>
-        <p className="text-body">Track, manage, and confirm your upcoming rentals.</p>
-      </header>
-
-      <OrderBoard />
-    </div>
-  );
+  return <div className="fade-in">
+    <PageHeader title="Orders" description="Confirm new bookings, start rentals and complete them when items come back." />
+    <OrderBoard />
+  </div>;
 }
