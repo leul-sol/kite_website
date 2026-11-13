@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../services/api";
 import { orderActions, type Order, type OrderTarget, type ChangeRequest } from "../../services/orders";
+import { type StaffSchedule } from "../../services/api";
+import { addDays, orderRange, today } from "../../services/staff";
+import AssignStaffDialog from "../Staff/AssignStaffDialog";
 import OrderBoardView from "./OrderBoardView";
 
 export default function OrderBoard() {
@@ -13,7 +16,15 @@ export default function OrderBoard() {
   const [review, setReview] = useState<{ order: Order; changes: ChangeRequest[] } | null>(null);
   const [pending, setPending] = useState<{ order: Order; target: OrderTarget } | null>(null);
   const [note, setNote] = useState("");
+  const [staffing, setStaffing] = useState<StaffSchedule | null>(null);
+  const [assigning, setAssigning] = useState<{ order: Order; start: string; end: string } | null>(null);
   const loadController = useRef<AbortController | null>(null);
+  // Who works which booking, for the last month and the next two. Optional: the board works without it.
+  const loadStaff = useCallback(() => {
+    const now = today();
+    api.getStaffSchedule(addDays(now, -30), addDays(now, 61)).then(setStaffing).catch(() => setStaffing(null));
+  }, []);
+  useEffect(() => { loadStaff(); }, [loadStaff]);
   const mutation = useRef(false);
   const mounted = useRef(true);
   const load = useCallback(async () => {
@@ -58,7 +69,15 @@ export default function OrderBoard() {
     if (mounted.current) { setNote(""); setReview({ order, changes: changes.filter(change => change.status === "OPEN") }); }
   }, false);
 
-  return <OrderBoardView orders={orders} loading={loading} error={error} busy={busy}
+  const staffFor = (orderId: string) => {
+    const booking = staffing?.bookings.find(b => b.id === orderId);
+    return booking ? staffing!.staff.filter(member => booking.staff.includes(member.id)) : staffing ? [] : undefined;
+  };
+
+  return <>
+  {assigning && <AssignStaffDialog bookingId={assigning.order.id} start={assigning.start} end={assigning.end}
+    onClose={() => setAssigning(null)} onSaved={loadStaff} />}
+  <OrderBoardView orders={orders} loading={loading} error={error} busy={busy}
     refresh={() => { setError(""); void load(); }}
     onAction={(order, target) => {
       if (!orderActions(order.status).some(action => action.target === target)) return;
@@ -66,5 +85,7 @@ export default function OrderBoard() {
     }} onReview={reviewChanges} pending={pending} review={review} note={note} onNote={setNote}
     onClose={() => { setPending(null); setReview(null); }}
     onConfirm={() => { if (pending) void run(() => api.updateOrderStatus(pending.order.id, pending.target), true); }}
-    onResolve={(id, approved) => { if (review) void run(() => api.resolveOrderChange(review.order.id, id, approved, note), true); }} />;
+    onResolve={(id, approved) => { if (review) void run(() => api.resolveOrderChange(review.order.id, id, approved, note), true); }}
+    staffFor={staffFor} onAssign={order => { const range = orderRange(order.date); if (range) setAssigning({ order, ...range }); }} />
+  </>;
 }

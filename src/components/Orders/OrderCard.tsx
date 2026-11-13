@@ -1,5 +1,8 @@
 "use client";
-import { CalendarDays, User } from "lucide-react";
+import { CalendarDays, User, UserPlus } from "lucide-react";
+import type { StaffMember } from "@/services/api";
+import { canAssignStaff } from "@/services/staff";
+import StaffAvatar from "@/components/Staff/StaffAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,10 +14,13 @@ export const STATUS_STYLE: Record<string, string> = {
   CANCELLATION_REQUESTED: "bg-warning/10 text-warning", RESCHEDULE_REQUESTED: "bg-warning/10 text-warning",
 };
 
-export default function OrderCard({ order, busy, onAction, onReview }: {
+export default function OrderCard({ order, busy, onAction, onReview, staff, onAssign }: {
   order: Order; busy: boolean;
   onAction: (order: Order, target: OrderTarget) => void;
   onReview: (order: Order) => void;
+  /** People assigned to this booking; undefined when the schedule is not loaded. */
+  staff?: StaffMember[];
+  onAssign?: (order: Order) => void;
 }) {
   const actions = orderActions(order.status);
   return <article className="space-y-3 rounded-xl border bg-card p-4 shadow-xs transition hover:shadow-sm">
@@ -31,6 +37,14 @@ export default function OrderCard({ order, busy, onAction, onReview }: {
       <p className="flex items-center gap-2"><CalendarDays className="size-3.5" />{order.date}</p>
       <p className="flex items-center gap-2"><User className="size-3.5" />Customer reference: {order.customerId.slice(0, 8)}</p>
     </div>
+    {onAssign && canAssignStaff(order.status) && <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-2.5 py-2">
+      {staff && staff.length > 0
+        ? <div className="flex -space-x-1.5" aria-label={`Staff: ${staff.map(m => m.name).join(", ")}`}>{staff.slice(0, 4).map(m => <StaffAvatar key={m.id} member={m} className="size-6 border-2 border-card text-[9px]" />)}
+            {staff.length > 4 && <span className="grid size-6 place-items-center rounded-full border-2 border-card bg-muted text-[9px]">+{staff.length - 4}</span>}</div>
+        : <span className="text-xs text-muted-foreground">No staff yet</span>}
+      <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={busy} onClick={() => onAssign(order)}>
+        <UserPlus className="size-3.5" />{staff && staff.length ? "Change staff" : "Assign staff"}</Button>
+    </div>}
     <div className="flex items-center justify-between border-t pt-3">
       <span className="text-xs text-muted-foreground">Total</span>
       <strong className="tabular-nums">{order.total}</strong>
