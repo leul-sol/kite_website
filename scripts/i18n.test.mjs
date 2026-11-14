@@ -21,6 +21,12 @@ const { translate, translateCount, formatMoney, formatDate, timeAgo, normalizeLo
 const { StaticI18nProvider } = load("../src/i18n/I18nProvider.tsx");
 const { default: DashboardView } = load("../src/components/Dashboard/DashboardView.tsx");
 const { parseWalletDashboard, parseBookingDashboard } = load("../src/services/provider-dashboard.ts");
+const { default: OrderBoardView } = load("../src/components/Orders/OrderBoardView.tsx");
+const { default: ListingPhotoView } = load("../src/components/Listings/ListingPhotoView.tsx");
+const { parseOrders } = load("../src/services/orders.ts");
+const staff = load("../src/services/staff.ts");
+const { validatePhoto } = load("../src/services/listing-photos.ts");
+const { TextError } = load("../src/i18n/errors.ts");
 Object.assign(require.extensions, saved);
 const React = require("react"), { renderToStaticMarkup } = require("react-dom/server");
 
@@ -73,4 +79,44 @@ test("the dashboard renders in Amharic", () => {
   assert.ok(html.includes("35.00 ብር"), "money in Amharic");
   assert.ok(html.includes("ትዕዛዝ 12345678፦ ተከፍሏል"), "booking event");
   assert.ok(!html.includes("Available wallet balance"), "no English left");
+});
+
+const inAmharic = element => renderToStaticMarkup(React.createElement(StaticI18nProvider, { locale: "am" }, element));
+
+test("the orders board and its cards render in Amharic, with money in ብር", () => {
+  const orders = parseOrders([
+    { bookingId: "paid-0001-0000", customerId: "customer-1", status: "PAID", startDate: "2026-12-01", endDate: "2026-12-02", totalMinor: 41500, currency: "ETB" },
+    { bookingId: "conf-0002-0000", customerId: "customer-2", status: "CONFIRMED", startDate: "2026-12-03", endDate: "2026-12-03", totalMinor: 73000, currency: "ETB" },
+  ]);
+  const noop = () => {};
+  const html = inAmharic(React.createElement(OrderBoardView, { orders, loading: false, error: "", busy: false, refresh: noop, onAction: noop,
+    onReview: noop, pending: null, review: null, note: "", onNote: noop, onClose: noop, onConfirm: noop, onResolve: noop }));
+  for (const text of ["ማረጋገጫ በመጠበቅ ላይ", "ትዕዛዙን አረጋግጥ", "ኪራዩን ጀምር", "415.00 ብር", "730.00 ብር", "ትዕዛዝ paid-000"]) assert.ok(html.includes(text), text);
+  for (const english of ["Awaiting confirmation", "Confirm booking", "Start rental", "ETB 415.00", "Refresh bookings"]) assert.ok(!html.includes(english), english);
+});
+
+test("the photo manager renders in Amharic", () => {
+  const html = inAmharic(React.createElement(ListingPhotoView, { photos: [], loading: false, busy: false, ready: true, error: "", active: true,
+    pendingDelete: null, onDelete() {}, onCancelDelete() {}, onConfirmDelete() {}, onRefresh() {}, onUpload() {}, onCover() {} }));
+  assert.ok(html.includes("የዝርዝር ፎቶዎች")); assert.ok(html.includes("እስካሁን የተሰቀለ ፎቶ የለም።"));
+  assert.ok(!html.includes("No uploaded photos yet"));
+});
+
+test("staff availability reads in Amharic, and English is unchanged", () => {
+  const member = { id: "m1", name: "Sara", role: "Decorator", skills: [] };
+  const schedule = { staff: [member], timeOff: [], bookings: [
+    { id: "b1", startDate: "2026-12-03", endDate: "2026-12-03", status: "CONFIRMED", staff: ["m1"], itemIds: [] },
+    { id: "b2", startDate: "2026-12-03", endDate: "2026-12-03", status: "PAID", staff: ["m1"], itemIds: [] }] };
+  assert.equal(staff.availability(member, schedule, "new", "2026-12-03", "2026-12-03").detail, "On 2 other bookings");
+  assert.equal(staff.availability(member, schedule, "new", "2026-12-03", "2026-12-03", "am").detail, "በ2 ሌሎች ትዕዛዞች ላይ");
+  assert.equal(staff.availability(member, schedule, "new", "2026-12-09", "2026-12-09", "am").detail, "ይገኛል");
+});
+
+test("our own validation errors keep English text but carry the key screens translate", () => {
+  try { validatePhoto({ size: 10, type: "image/gif" }); assert.fail("should throw"); }
+  catch (cause) {
+    assert.ok(cause instanceof TextError);
+    assert.equal(cause.message, "Choose a PNG or JPEG photo.");
+    assert.equal(translate("am", cause.key), "PNG ወይም JPEG ፎቶ ይምረጡ።");
+  }
 });

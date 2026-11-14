@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../services/api";
 import { validatePhoto, type ListingPhoto } from "../../services/listing-photos";
 import ListingPhotoView from "./ListingPhotoView";
+import { useT } from "@/i18n/I18nProvider";
 
 export default function ListingPhotoManager({ itemId, active = true, kind = "items", onChanged, onBusyChange }: { itemId: string; active?: boolean; kind?: "items" | "setups"; onChanged?: () => void; onBusyChange?: (busy: boolean) => void }) {
   const [photos, setPhotos] = useState<ListingPhoto[]>([]);
@@ -10,12 +11,13 @@ export default function ListingPhotoManager({ itemId, active = true, kind = "ite
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const lock = useRef(false), mounted = useRef(true);
+  const { err } = useT();
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setReady(false);
     try { const data = await api.getListingPhotos(itemId, signal, kind); if (!signal?.aborted && mounted.current) { setPhotos(data); setReady(true); } }
-    catch { if (!signal?.aborted && mounted.current) setError("Photos could not be loaded. Refresh to try again."); }
+    catch { if (!signal?.aborted && mounted.current) setError(err(null, "photo.loadFailed")); }
     finally { if (!signal?.aborted && mounted.current) setLoading(false); }
-  }, [itemId, kind]);
+  }, [itemId, kind]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController(); void load(controller.signal);
@@ -25,7 +27,7 @@ export default function ListingPhotoManager({ itemId, active = true, kind = "ite
     if (lock.current) return;
     lock.current = true; setBusy(true); onBusyChange?.(true); setError("");
     try { await operation(); }
-    catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : "Photo change failed."); }
+    catch (cause) { if (mounted.current) setError(err(cause, "photo.changeFailed")); }
     finally {
       if (mounted.current) { setPendingDelete(null); await load(); onChanged?.(); setBusy(false); onBusyChange?.(false); }
       lock.current = false;
@@ -35,6 +37,6 @@ export default function ListingPhotoManager({ itemId, active = true, kind = "ite
     pendingDelete={pendingDelete} onDelete={setPendingDelete} onCancelDelete={() => setPendingDelete(null)}
     onConfirmDelete={() => { if (pendingDelete) void run(() => api.deleteListingPhoto(itemId, pendingDelete, kind)); }}
     onRefresh={() => { setError(""); void load(); }}
-    onUpload={file => { try { validatePhoto(file); void run(() => api.uploadListingPhoto(itemId, file, kind)); } catch (cause) { setError((cause as Error).message); } }}
+    onUpload={file => { try { validatePhoto(file); void run(() => api.uploadListingPhoto(itemId, file, kind)); } catch (cause) { setError(err(cause, "photo.changeFailed")); } }}
     onCover={id => { const ids = [id, ...photos.filter(photo => photo.id !== id).map(photo => photo.id)]; void run(() => api.orderListingPhotos(itemId, ids, kind)); }} />;
 }

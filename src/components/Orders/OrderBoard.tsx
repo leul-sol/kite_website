@@ -9,6 +9,7 @@ import { addDays, orderRange, today } from "../../services/staff";
 import AssignStaffDialog from "../Staff/AssignStaffDialog";
 import HandoverDialog from "../Inventory/HandoverDialog";
 import OrderBoardView from "./OrderBoardView";
+import { useT } from "@/i18n/I18nProvider";
 
 export default function OrderBoard() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -20,6 +21,7 @@ export default function OrderBoard() {
   const [note, setNote] = useState("");
   const [staffing, setStaffing] = useState<StaffSchedule | null>(null);
   const [assigning, setAssigning] = useState<{ order: Order; start: string; end: string } | null>(null);
+  const { t, err } = useT();
   const [handover, setHandover] = useState<string | null>(null);
   // A notification links here as /orders?booking=<id>.
   const highlighted = useSearchParams().get("booking");
@@ -44,7 +46,7 @@ export default function OrderBoard() {
       const data = await api.getOrders(controller.signal);
       if (!controller.signal.aborted) setOrders(data);
     } catch {
-      if (!controller.signal.aborted) setError("Bookings could not be loaded. Refresh to try again.");
+      if (!controller.signal.aborted) setError(t("ord.loadFailed"));
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -63,7 +65,7 @@ export default function OrderBoard() {
       if (mounted.current && changed) { setPending(null); setReview(null); await load(); }
     } catch (cause) {
       if (mounted.current) {
-        setError(cause instanceof Error ? cause.message : "The request failed. Refresh and try again.");
+        setError(err(cause, "common.requestFailed"));
         // Never guess a new status after a conflict or an uncertain response.
         if (changed) { setPending(null); setReview(null); await load(); }
       }
