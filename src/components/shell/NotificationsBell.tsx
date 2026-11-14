@@ -87,7 +87,7 @@ export function NotificationsBell() {
           Mark all read
         </Button>
       </div>
-      <div className="max-h-[min(28rem,70vh)] overflow-y-auto">
+      <div className="no-scrollbar max-h-[min(28rem,70vh)] overflow-y-auto">
         {error && <p role="alert" className="px-4 py-3 text-sm text-destructive">{error}</p>}
         {!items && !error && <p role="status" className="px-4 py-6 text-center text-sm text-muted-foreground">Loading…</p>}
         {items?.length === 0 && <div className="px-4 py-8 text-center">

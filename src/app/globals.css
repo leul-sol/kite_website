@@ -112,3 +112,12 @@
 .fade-in { animation: kite-fade-in .25s ease-out; }
 @keyframes kite-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* Scrolls normally, without showing a scroll bar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

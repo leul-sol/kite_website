@@ -69,7 +69,7 @@ export function SidebarBody({ profile, unread, onNavigate, collapsed = false, on
       </Hint>}
     </div>
 
-    <nav aria-label="Portal" className="-mx-1 flex-1 space-y-5 overflow-y-auto px-1 py-1">
+    <nav aria-label="Portal" className="no-scrollbar -mx-1 flex-1 space-y-5 overflow-y-auto px-1 py-1">
       {NAV.map(group => <div key={group.label} className="space-y-1">
         {collapsed
           ? <div aria-hidden className="mx-auto my-2 h-px w-6 bg-border first:hidden" />
@@ -80,17 +80,17 @@ export function SidebarBody({ profile, unread, onNavigate, collapsed = false, on
           return <Hint key={item.href} show={collapsed} label={item.label}>
             <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} aria-label={collapsed ? item.label : undefined}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all",
-                collapsed ? "mx-auto size-10 justify-center" : "px-3 py-2.5",
+                "group relative flex items-center gap-3 rounded-lg text-sm transition-colors duration-150",
+                collapsed ? "mx-auto size-10 justify-center" : "px-3 py-2",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
+                  ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                  : "font-medium text-sidebar-foreground hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-white/[0.07]",
               )}>
-              <item.icon className={cn("size-[18px] shrink-0", active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} />
+              <item.icon className={cn("size-[18px] shrink-0 transition-colors", active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground")} />
               {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
               {showUnread && (collapsed
                 ? <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-highlight ring-2 ring-sidebar" />
-                : <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">{unread > 99 ? "99+" : unread}</Badge>)}
+                : <Badge className={cn("h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]", active && "bg-primary-foreground text-primary")}>{unread > 99 ? "99+" : unread}</Badge>)}
             </Link>
           </Hint>;
         })}
@@ -100,7 +100,7 @@ export function SidebarBody({ profile, unread, onNavigate, collapsed = false, on
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" aria-label={`Account: ${name}`}
-          className={cn("flex w-full items-center gap-3 rounded-xl text-left transition-colors hover:bg-sidebar-accent/60",
+          className={cn("flex w-full items-center gap-3 rounded-lg text-left transition-colors hover:bg-foreground/[0.05] dark:hover:bg-white/[0.06]",
             collapsed ? "justify-center p-1.5" : "p-2")}>
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
             {name.slice(0, 1).toUpperCase()}

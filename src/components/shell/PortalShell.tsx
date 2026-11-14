@@ -64,7 +64,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
     <div className={cn("transition-[padding] duration-200 lg:py-3 lg:pr-3", collapsed ? "lg:pl-[76px]" : "lg:pl-64")}>
       {/* On desktop the panel scrolls on its own, so its rounded edges and top bar stay put. */}
-      <div className="flex min-h-screen flex-col bg-background lg:h-[calc(100vh-1.5rem)] lg:min-h-0 lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-sm">
+      <div className="flex min-h-screen flex-col bg-background lg:h-[calc(100vh-1.5rem)] lg:min-h-0 lg:overflow-y-auto lg:no-scrollbar lg:rounded-2xl lg:border lg:shadow-sm">
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:px-6 lg:h-16">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
