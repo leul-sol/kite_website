@@ -17,6 +17,7 @@ export default function OrderBoardView(props: {
   note: string; onNote: (value: string) => void; onClose: () => void;
   onConfirm: () => void; onResolve: (id: string, approved: boolean) => void;
   staffFor?: (orderId: string) => StaffMember[] | undefined; onAssign?: (order: Order) => void; onHandover?: (order: Order) => void;
+  highlighted?: string | null;
 }) {
   const disabled = props.busy || props.loading;
   const columns = orderColumns.filter(column => column.id !== "other" || props.orders.some(order => orderColumn(order.status) === "other"));
@@ -79,7 +80,7 @@ export default function OrderBoardView(props: {
           </div>
           <div className="flex-1 space-y-3">
             {orders.length === 0 && <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">Nothing here</p>}
-            {orders.map(order => <OrderCard key={order.id} order={order} busy={disabled || !!props.pending || !!props.review}
+            {orders.map(order => <OrderCard key={order.id} order={order} highlighted={props.highlighted === order.id} busy={disabled || !!props.pending || !!props.review}
               onAction={props.onAction} onReview={props.onReview} staff={props.staffFor?.(order.id)} onAssign={props.onAssign} onHandover={props.onHandover} />)}
           </div>
         </section>;

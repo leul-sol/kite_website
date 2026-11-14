@@ -3,6 +3,7 @@ import { parseBookingDashboard, parseWalletDashboard } from "./provider-dashboar
 import { parseOrders, parseOrderChanges, type Order, type OrderTarget } from "./orders";
 import { parsePhotos, photoUrl } from "./listing-photos";
 import { parseListingDetail, type ListingEdit } from "./listing-edit";
+import { parseNotifications, NOTIFICATIONS_PAGE } from "./notifications";
 export type { Order, OrderStatus } from "./orders";
 let refreshInFlight: Promise<Response> | undefined;
 
@@ -214,6 +215,13 @@ export const api = {
   sendMessage: (id: string, body: string) =>
     request<ChatMessage>(`/api/v1/messages/conversations/${encodeURIComponent(id)}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
   getUnreadMessages: () => request<{ count: number }>("/api/v1/messages/unread"),
+  // ── Notifications (written by the server; the portal is English for now) ──
+  getNotifications: async (before?: string) => parseNotifications(await request<unknown>(
+    `/api/v1/notifications?limit=${NOTIFICATIONS_PAGE}${before ? `&before=${encodeURIComponent(before)}` : ""}`)),
+  getUnreadNotifications: () => request<{ count: number }>("/api/v1/notifications/unread-count"),
+  markNotificationRead: (id: string) =>
+    request<unknown>(`/api/v1/notifications/${encodeURIComponent(id)}/read`, { method: "PATCH", body: "{}" }),
+  markAllNotificationsRead: () => request<unknown>("/api/v1/notifications/mark-all-read", { method: "POST", body: "{}" }),
   // ── Storefront (public profile customers see in the app) ──────────────
   // ── Staff scheduling (team members come from the storefront team) ──
   getStaffSchedule: (from: string, to: string) =>

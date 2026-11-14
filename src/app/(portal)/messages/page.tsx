@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MessageSquare, SendHorizonal, ShieldCheck } from "lucide-react";
 import { api, type ChatThread, type ConversationSummary } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,13 @@ function Avatar({ name, className }: { name: string; className?: string }) {
   return <span className={cn("grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-semibold text-primary", className)}>{name.slice(0, 1).toUpperCase()}</span>;
 }
 
+/** /messages?c=<id> opens that conversation (notifications link here). */
 export default function MessagesPage() {
+  return <Suspense><MessagesView /></Suspense>;
+}
+
+function MessagesView() {
+  const requested = useSearchParams().get("c");
   const [list, setList] = useState<ConversationSummary[]>();
   const [active, setActive] = useState<string>();
   const [thread, setThread] = useState<ChatThread>();
@@ -64,6 +71,12 @@ export default function MessagesPage() {
     await loadThread(id);
     void loadList();
   }
+
+  useEffect(() => {
+    if (requested && /^[A-Za-z0-9-]{1,64}$/.test(requested)) void open(requested);
+    // Only when the link changes; open() is recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requested]);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "../../services/api";
 import { orderActions, type Order, type OrderTarget, type ChangeRequest } from "../../services/orders";
 import { type StaffSchedule } from "../../services/api";
@@ -20,6 +21,12 @@ export default function OrderBoard() {
   const [staffing, setStaffing] = useState<StaffSchedule | null>(null);
   const [assigning, setAssigning] = useState<{ order: Order; start: string; end: string } | null>(null);
   const [handover, setHandover] = useState<string | null>(null);
+  // A notification links here as /orders?booking=<id>.
+  const highlighted = useSearchParams().get("booking");
+  useEffect(() => {
+    if (!highlighted || loading) return;
+    document.getElementById(`order-${highlighted}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlighted, loading, orders]);
   const loadController = useRef<AbortController | null>(null);
   // Who works which booking, for the last month and the next two. Optional: the board works without it.
   const loadStaff = useCallback(() => {
@@ -80,7 +87,7 @@ export default function OrderBoard() {
   {assigning && <AssignStaffDialog bookingId={assigning.order.id} start={assigning.start} end={assigning.end}
     onClose={() => setAssigning(null)} onSaved={loadStaff} />}
   {handover && <HandoverDialog bookingId={handover} onClose={() => setHandover(null)} />}
-  <OrderBoardView orders={orders} loading={loading} error={error} busy={busy}
+  <OrderBoardView orders={orders} loading={loading} error={error} busy={busy} highlighted={highlighted}
     refresh={() => { setError(""); void load(); }}
     onAction={(order, target) => {
       if (!orderActions(order.status).some(action => action.target === target)) return;
