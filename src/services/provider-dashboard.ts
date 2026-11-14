@@ -39,7 +39,9 @@ export function parseBookingDashboard(value: unknown): ProviderBookingDashboard 
   }
   return data as ProviderBookingDashboard;
 }
-export function formatDashboardMoney(minor: string, currency: string): string {
+/** Exact amounts from minor units: "ETB 1,500.00", or "1,500.00 ብር" in Amharic. */
+export function formatDashboardMoney(minor: string, currency: string, locale: "en" | "am" = "en"): string {
   const amount = BigInt(minor), scale = BigInt(100);
-  return `${currency} ${(amount / scale).toLocaleString("en-US")}.${(amount % scale).toString().padStart(2, "0")}`;
+  const text = `${(amount / scale).toLocaleString("en-US")}.${(amount % scale).toString().padStart(2, "0")}`;
+  return locale === "am" && currency === "ETB" ? `${text} ብር` : `${currency} ${text}`;
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FormError, controlClass } from "@/components/shell/fields";
 import GoogleButton, { googleSignIn } from "@/components/auth/GoogleButton";
 import PhoneVerify from "@/components/auth/PhoneVerify";
+import { useT } from "@/i18n/I18nProvider";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 const link = "font-medium text-primary underline-offset-4 hover:underline";
@@ -13,6 +14,7 @@ const link = "font-medium text-primary underline-offset-4 hover:underline";
 const home = (role?: string) => window.location.assign(role === "TEAM" ? "/my-work" : "/dashboard");
 
 export default function AuthForm({ mode }: { mode: Mode }) {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +25,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
   async function run(work: () => Promise<void>) {
     setBusy(true); setError(""); setMessage("");
-    try { await work(); } catch (e) { setError(e instanceof Error ? e.message : "Please try again."); }
+    try { await work(); } catch (e) { setError(e instanceof Error ? e.message : t("common.tryAgain")); }
     finally { setBusy(false); }
   }
 
@@ -50,39 +52,38 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         const session = await api.auth("login", { email: field("identity"), password: data.get("password") }) as { role?: string };
         home(session?.role);
       } else if (mode === "signup") {
-        if (emailTaken) throw new Error("This email is already registered. Sign in instead.");
-        if (!verifiedPhone) throw new Error("Verify your phone number first.");
+        if (emailTaken) throw new Error(t("auth.emailTakenError"));
+        if (!verifiedPhone) throw new Error(t("auth.verifyPhoneFirst"));
         await api.auth("register", { fullName: field("fullName"), email: field("email"), phone: verifiedPhone, password: data.get("password"), role: "PROVIDER" });
         window.location.assign("/verification");
       } else if (mode === "forgot") {
         const result = await api.auth("password/forgot", { identity: field("identity") });
-        setMessage(result.message ?? "If this account exists, password reset instructions will be sent.");
+        setMessage(result.message ?? t("auth.resetSent"));
       } else {
         const token = field("token") || new URLSearchParams(window.location.search).get("token");
-        if (!token) throw new Error("Enter the reset token from your reset instructions.");
+        if (!token) throw new Error(t("auth.enterToken"));
         await api.auth("password/reset/confirm", { token, newPassword: data.get("password") });
-        setMessage("Password changed. You can now sign in.");
+        setMessage(t("auth.passwordChanged"));
       }
     });
   }
 
   if (googleSignup) return <div className="space-y-6">
     <div className="space-y-1.5">
-      <h2 className="text-2xl font-semibold tracking-tight">Almost there{googleSignup.name ? `, ${googleSignup.name.split(" ")[0]}` : ""}</h2>
-      <p className="text-sm text-muted-foreground">Add your phone number to finish creating your provider account for {googleSignup.email}. Every Kite account has a verified phone.</p>
+      <h2 className="text-2xl font-semibold tracking-tight">{googleSignup.name ? t("auth.almostThereName", { name: googleSignup.name.split(" ")[0] }) : t("auth.almostThere")}</h2>
+      <p className="text-sm text-muted-foreground">{t("auth.googlePhone", { email: googleSignup.email })}</p>
     </div>
     <PhoneVerify checkTaken disabled={busy} onVerified={setVerifiedPhone} onError={setError} />
     {error && <FormError>{error}</FormError>}
     <Button className="w-full" size="lg" disabled={busy || !verifiedPhone} onClick={() => void run(async () => {
       await api.auth("google/complete", { signupToken: googleSignup.signupToken, phone: verifiedPhone });
       window.location.assign("/verification");
-    })}>{busy ? "Please wait…" : "Create provider account"}</Button>
-    <p className="text-center text-sm text-muted-foreground"><button className={link} onClick={() => { setGoogleSignup(null); setError(""); }}>Back</button></p>
+    })}>{busy ? t("common.pleaseWait") : t("auth.createAccount")}</Button>
+    <p className="text-center text-sm text-muted-foreground"><button className={link} onClick={() => { setGoogleSignup(null); setError(""); }}>{t("common.back")}</button></p>
   </div>;
 
-  const title = { login: "Welcome back", signup: "Create your provider account", forgot: "Reset your password", reset: "Choose a new password" }[mode];
-  const subtitle = { login: "Sign in to manage your business.", signup: "Then complete your business verification.",
-    forgot: "We'll send reset instructions to your email or phone.", reset: "Follow your reset instructions to recover access." }[mode];
+  const title = t(`auth.${mode}.title`);
+  const subtitle = t(`auth.${mode}.subtitle`);
 
   return <div className="space-y-6">
     <div className="space-y-1.5">
@@ -93,33 +94,33 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     <form onSubmit={submit}>
       <fieldset disabled={busy} className="grid gap-4">
         {mode === "signup" && <>
-          <Field label="Full name"><input name="fullName" autoComplete="name" className={controlClass} required maxLength={200} /></Field>
-          <Field label="Email address" hint={emailTaken ? <span className="text-destructive">This email is already registered. <Link className={link} href="/auth/login">Sign in instead</Link></span> : undefined}>
+          <Field label={t("auth.fullName")}><input name="fullName" autoComplete="name" className={controlClass} required maxLength={200} /></Field>
+          <Field label={t("auth.emailAddress")} hint={emailTaken ? <span className="text-destructive">{t("auth.emailTaken")} <Link className={link} href="/auth/login">{t("auth.signInInstead")}</Link></span> : undefined}>
             <input name="email" type="email" autoComplete="email" className={controlClass} required placeholder="you@business.com"
               onBlur={e => void checkEmail(e.target.value.trim())} onChange={() => emailTaken && setEmailTaken(false)} />
           </Field>
           <PhoneVerify checkTaken disabled={busy} onVerified={setVerifiedPhone} onError={setError} />
         </>}
-        {(mode === "login" || mode === "forgot") && <Field label="Email or phone">
-          <input name="identity" autoComplete="username" className={controlClass} required placeholder="you@business.com or 0911 234 567" />
+        {(mode === "login" || mode === "forgot") && <Field label={t("auth.identity")}>
+          <input name="identity" autoComplete="username" className={controlClass} required placeholder={t("auth.identityPlaceholder")} />
         </Field>}
-        {mode === "reset" && <Field label="Reset token (if not included in your link)"><input name="token" autoComplete="off" className={controlClass} /></Field>}
-        {mode !== "forgot" && <Field label={mode === "login" ? <span className="flex justify-between">Password<Link className={`${link} text-xs font-normal`} href="/auth/forgot-password">Forgot password?</Link></span> : "Password"}
-          hint={mode === "login" ? undefined : "At least 8 characters."}>
-          <input name="password" type="password" aria-label="Password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 8} className={controlClass} required />
+        {mode === "reset" && <Field label={t("auth.resetToken")}><input name="token" autoComplete="off" className={controlClass} /></Field>}
+        {mode !== "forgot" && <Field label={mode === "login" ? <span className="flex justify-between">{t("auth.password")}<Link className={`${link} text-xs font-normal`} href="/auth/forgot-password">{t("auth.forgotLink")}</Link></span> : t("auth.password")}
+          hint={mode === "login" ? undefined : t("auth.passwordHint")}>
+          <input name="password" type="password" aria-label={t("auth.password")} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 8} className={controlClass} required />
         </Field>}
         {error && <FormError>{error}</FormError>}
         {message && <p role="status" className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-primary">{message}</p>}
         <Button className="w-full" size="lg" disabled={mode === "signup" && (!verifiedPhone || emailTaken)}>
-          {busy ? "Please wait…" : mode === "login" ? "Sign In" : mode === "signup" ? "Create provider account" : mode === "forgot" ? "Request reset instructions" : "Save new password"}
+          {busy ? t("common.pleaseWait") : mode === "login" ? t("auth.signInButton") : mode === "signup" ? t("auth.createAccount") : mode === "forgot" ? t("auth.requestReset") : t("auth.saveNewPassword")}
         </Button>
       </fieldset>
     </form>
     <p className="text-center text-sm text-muted-foreground">
-      {mode === "login" && <>New to Kite? <Link className={link} href="/auth/signup">Create provider account</Link></>}
-      {mode === "signup" && <>Already have an account? <Link className={link} href="/auth/login">Sign in</Link></>}
-      {mode === "forgot" && <><Link className={link} href="/auth/login">Sign in</Link> · <Link className={link} href="/auth/reset-password">I have a reset token</Link></>}
-      {mode === "reset" && <Link className={link} href="/auth/login">Sign in</Link>}
+      {mode === "login" && <>{t("auth.newToKite")} <Link className={link} href="/auth/signup">{t("auth.createAccount")}</Link></>}
+      {mode === "signup" && <>{t("auth.haveAccount")} <Link className={link} href="/auth/login">{t("common.signIn")}</Link></>}
+      {mode === "forgot" && <><Link className={link} href="/auth/login">{t("common.signIn")}</Link> · <Link className={link} href="/auth/reset-password">{t("auth.haveToken")}</Link></>}
+      {mode === "reset" && <Link className={link} href="/auth/login">{t("common.signIn")}</Link>}
     </p>
   </div>;
 }
