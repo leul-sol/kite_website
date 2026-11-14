@@ -9,22 +9,25 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { KiteBrand, SidebarBody } from "./AppSidebar";
-import { NAV, navItemFor } from "./nav";
+import { NAV, groupLabel, navItemFor, navLabel } from "./nav";
+import { useT } from "@/i18n/I18nProvider";
+import { LanguageSwitch } from "@/i18n/LanguageSwitch";
 import { useProviderShell } from "./useProviderShell";
 import { NotificationsBell } from "./NotificationsBell";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const { t } = useT();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const dark = mounted && resolvedTheme === "dark";
   return <Tooltip>
     <TooltipTrigger asChild>
-      <Button variant="ghost" size="icon" aria-label={dark ? "Use light theme" : "Use dark theme"} onClick={() => setTheme(dark ? "light" : "dark")}>
+      <Button variant="ghost" size="icon" aria-label={dark ? t("common.useLight") : t("common.useDark")} onClick={() => setTheme(dark ? "light" : "dark")}>
         {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </Button>
     </TooltipTrigger>
-    <TooltipContent>{dark ? "Light theme" : "Dark theme"}</TooltipContent>
+    <TooltipContent>{dark ? t("common.lightTheme") : t("common.darkTheme")}</TooltipContent>
   </Tooltip>;
 }
 
@@ -51,6 +54,7 @@ function useCollapsed() {
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { profile, unread } = useProviderShell();
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [collapsed, toggle] = useCollapsed();
   const current = navItemFor(pathname);
@@ -68,32 +72,33 @@ export default function PortalShell({ children }: { children: React.ReactNode })
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:px-6 lg:h-16">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu"><Menu className="size-5" /></Button>
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t("common.openMenu")}><Menu className="size-5" /></Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-sidebar px-3 py-4">
-              <SheetTitle className="sr-only">Menu</SheetTitle>
+              <SheetTitle className="sr-only">{t("common.menu")}</SheetTitle>
               <SidebarBody profile={profile} unread={unread} onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
           <KiteBrand className="lg:hidden" />
-          <nav aria-label="You are here" className="hidden min-w-0 items-center gap-1.5 lg:flex">
-            {group && <><span className="text-sm text-muted-foreground">{group.label}</span>
+          <nav aria-label={t("shell.youAreHere")} className="hidden min-w-0 items-center gap-1.5 lg:flex">
+            {group && <><span className="text-sm text-muted-foreground">{t(groupLabel(group))}</span>
               <ChevronRight aria-hidden className="size-3.5 text-muted-foreground/70" /></>}
-            <span className="truncate text-base font-semibold">{current?.label ?? "Kite"}</span>
+            <span className="truncate text-base font-semibold">{current ? t(navLabel(current)) : "Kite"}</span>
           </nav>
           <div className="ml-auto flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button asChild variant="ghost" size="icon" className="relative" aria-label={unread ? `Messages, ${unread} unread` : "Messages"}>
+                <Button asChild variant="ghost" size="icon" className="relative" aria-label={unread ? t("shell.messagesUnread", { count: unread }) : t("shell.messages")}>
                   <Link href="/messages">
                     <MessageSquare className="size-4" />
                     {unread > 0 && <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-highlight ring-2 ring-background" />}
                   </Link>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Messages</TooltipContent>
+              <TooltipContent>{t("shell.messages")}</TooltipContent>
             </Tooltip>
             <NotificationsBell />
+            <LanguageSwitch compact />
             <ThemeToggle />
           </div>
         </header>

@@ -65,7 +65,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Latin text uses Inter; Amharic falls through to Noto Sans Ethiopic. */
+  --font-sans: var(--font-inter), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
