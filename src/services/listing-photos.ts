@@ -1,3 +1,4 @@
+import { TextError } from "@/i18n/errors";
 export type ListingPhoto = { id: string; url: string; contentType: string; width: number; height: number };
 export function photoUrl(url: string): string {
   if (/^\/api\/v1\/catalog\/(items|setups|storefronts)\/[a-f0-9-]{36}\/images\/[a-f0-9-]{36}\/content$/i.test(url)) return url.replace("/api/v1/", "/api/backend/");
@@ -13,13 +14,13 @@ export function parsePhotos(value: unknown): ListingPhoto[] {
   });
 }
 export function validatePhoto(file: { size: number; type: string }) {
-  if (file.size < 1 || file.size > 2 * 1024 * 1024) throw new Error("Choose a photo between 1 byte and 2 MiB.");
-  if (!["image/png", "image/jpeg"].includes(file.type)) throw new Error("Choose a PNG or JPEG photo.");
+  if (file.size < 1 || file.size > 2 * 1024 * 1024) throw new TextError("err.photoSize");
+  if (!["image/png", "image/jpeg"].includes(file.type)) throw new TextError("err.photoType");
 }
 export function etbMinor(value: string, allowZero = false): number {
-  if (!/^\d+(\.\d{1,2})?$/.test(value)) throw new Error("Enter an ETB amount with up to two decimal places.");
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) throw new TextError("err.amount");
   const [whole, fraction = ""] = value.split(".");
   const minor = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
-  if (!Number.isSafeInteger(minor) || minor < (allowZero ? 0 : 1)) throw new Error(allowZero ? "Enter a valid non-negative deposit." : "Enter a positive, valid daily rate.");
+  if (!Number.isSafeInteger(minor) || minor < (allowZero ? 0 : 1)) throw new TextError(allowZero ? "err.deposit" : "err.rate");
   return minor;
 }

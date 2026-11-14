@@ -1,4 +1,5 @@
 import type { StaffConflict, StaffMember, StaffSchedule } from "./api";
+import { translate, translateCount, type Locale } from "@/i18n/translate";
 
 /** Bookings that can still have staff changed (unpaid requests count until they expire). */
 export const OPEN_STATUSES = ["REQUESTED", "PAID", "CONFIRMED", "PICKED_UP", "ACTIVE", "CANCELLATION_REQUESTED", "RESCHEDULE_REQUESTED"];
@@ -37,25 +38,34 @@ export function orderRange(date: string): { start: string; end: string } | null 
 export type Availability = { state: "free" | "off" | "busy"; detail: string };
 
 /** Whether someone can work a booking, judged from a schedule covering its dates. */
-export function availability(member: StaffMember, schedule: StaffSchedule, bookingId: string, start: string, end: string): Availability {
+export function availability(member: StaffMember, schedule: StaffSchedule, bookingId: string, start: string, end: string, locale: Locale = "en"): Availability {
+  const day = (d: string) => shortDay(d, locale);
   const off = schedule.timeOff.find(t => t.memberId === member.id && overlaps(t.startDate, t.endDate, start, end));
-  if (off) return { state: "off", detail: off.startDate === off.endDate ? `Off on ${shortDay(off.startDate)}` : `Off ${shortDay(off.startDate)} – ${shortDay(off.endDate)}` };
+  if (off) return { state: "off", detail: off.startDate === off.endDate
+    ? translate(locale, "staff.offOn", { date: day(off.startDate) })
+    : translate(locale, "staff.offRange", { start: day(off.startDate), end: day(off.endDate) }) };
   const busy = schedule.bookings.filter(b => b.id !== bookingId && OPEN_STATUSES.includes(b.status)
     && b.staff.includes(member.id) && overlaps(b.startDate, b.endDate, start, end));
-  if (busy.length) return { state: "busy", detail: `On ${busy.length} other booking${busy.length === 1 ? "" : "s"}` };
-  return { state: "free", detail: "Available" };
+  if (busy.length) return { state: "busy", detail: translateCount(locale, "staff.busy", busy.length) };
+  return { state: "free", detail: translate(locale, "staff.available") };
 }
 
-export function describeConflict(conflict: StaffConflict, staff: StaffMember[]): string {
-  const name = staff.find(member => member.id === conflict.memberId)?.name ?? "Someone";
-  const when = conflict.startDate === conflict.endDate ? shortDay(conflict.startDate) : `${shortDay(conflict.startDate)} – ${shortDay(conflict.endDate)}`;
+export function describeConflict(conflict: StaffConflict, staff: StaffMember[], locale: Locale = "en"): string {
+  const name = staff.find(member => member.id === conflict.memberId)?.name ?? translate(locale, "staff.someone");
+  const when = conflict.startDate === conflict.endDate ? shortDay(conflict.startDate, locale) : `${shortDay(conflict.startDate, locale)} – ${shortDay(conflict.endDate, locale)}`;
   return conflict.type === "TIME_OFF"
-    ? `${name} is off ${when}.`
-    : `${name} is already on booking ${conflict.bookingId?.slice(0, 8)} (${when}).`;
+    ? translate(locale, "staff.conflictOff", { name, when })
+    : translate(locale, "staff.conflictBooked", { name, ref: conflict.bookingId?.slice(0, 8) ?? "", when });
 }
 
-export function shortDay(day: string): string {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+/** "Mon 1 Dec" style. English keeps the browser's date style; Amharic uses Amharic names. */
+export function shortDay(day: string, locale: Locale = "en"): string {
+  const options: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" };
+  const date = new Date(`${day}T00:00:00Z`);
+  if (locale === "am") {
+    try { return date.toLocaleDateString("am-ET", options); } catch { /* fall back below */ }
+  }
+  return date.toLocaleDateString(undefined, options);
 }
 
 export function parseSkills(value: string): string[] {
