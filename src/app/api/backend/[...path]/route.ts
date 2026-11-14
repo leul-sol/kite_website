@@ -34,7 +34,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
   const teamManagement = /^auth\/team(\/|$)/.test(route);
   const invitation = /^auth\/team-invite\/(accept|[0-9a-f]{64})$/.test(route);
   const authAction = route.startsWith("auth/") && !teamManagement && !invitation ? route.slice(5) : null;
-  if (!/^(auth|catalog|bookings|wallet|providers|messages)(\/|$)/.test(route) || adminOnly.some(([method, pattern]) => (!method || method === req.method) && pattern.test(route)) || path.some(p => !/^[a-zA-Z0-9_-]+$/.test(p))) {
+  if (!/^(auth|catalog|bookings|wallet|providers|messages|notifications)(\/|$)/.test(route) || adminOnly.some(([method, pattern]) => (!method || method === req.method) && pattern.test(route)) || path.some(p => !/^[a-zA-Z0-9_-]+$/.test(p))) {
     return NextResponse.json({ error: "Unknown endpoint" }, { status: 404 });
   }
   if (authAction && (!publicActions.has(authAction) && !["refresh", "logout"].includes(authAction))) {
@@ -43,6 +43,8 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
   if (authAction && req.method !== (authAction === "google/config" ? "GET" : "POST")) return new NextResponse(null, { status: 405 });
   const fingerprint = req.cookies.get(names.fingerprint)?.value ?? crypto.randomUUID();
   const headers = new Headers({ "X-Session-Fingerprint": fingerprint, "X-Device-Platform": "web", "X-Device-Model": "Kite provider portal" });
+  // Text the server writes (notifications) comes back in the portal's language.
+  headers.set("Accept-Language", req.cookies.get("kite_locale")?.value === "am" ? "am" : "en");
   for (const name of ["content-type", "idempotency-key"]) {
     const value = req.headers.get(name);
     if (value) headers.set(name, value);
