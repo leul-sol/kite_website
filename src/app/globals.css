@@ -6,7 +6,7 @@
 /* ── Kite design tokens (shared with the mobile app's brand) ────────────── */
 :root {
   --radius: 0.75rem;
-  --background: #f6fafa;
+  --background: #ffffff;
   --foreground: #0d2b2b;
   --card: #ffffff;
   --card-foreground: #0d2b2b;
@@ -27,10 +27,11 @@
   --border: #dcebeb;
   --input: #d3e5e5;
   --ring: #2b9490;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #33504f;
-  --sidebar-accent: #e7f3f2;
-  --sidebar-accent-foreground: #0f5555;
+  /* The portal frame: a soft background the sidebar sits on; the active item is a white pill. */
+  --sidebar: #eef3f3;
+  --sidebar-foreground: #3d5857;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #0d2b2b;
   --chart-1: #1a6e6e;
   --chart-2: #4cb8b8;
   --chart-3: #f5c842;
@@ -57,10 +58,10 @@
   --border: #213d3d;
   --input: #274646;
   --ring: #4cb8b8;
-  --sidebar: #0f1e1e;
+  --sidebar: #081212;
   --sidebar-foreground: #b7cccc;
-  --sidebar-accent: #183232;
-  --sidebar-accent-foreground: #e0f2f2;
+  --sidebar-accent: #172e2e;
+  --sidebar-accent-foreground: #e8f4f4;
 }
 
 @theme inline {
