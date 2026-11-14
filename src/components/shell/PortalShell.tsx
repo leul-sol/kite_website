@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { KiteBrand, SidebarBody } from "./AppSidebar";
 import { navItemFor } from "./nav";
 import { useProviderShell } from "./useProviderShell";
+import { NotificationsBell } from "./NotificationsBell";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -66,6 +67,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             </TooltipTrigger>
             <TooltipContent>Messages</TooltipContent>
           </Tooltip>
+          <NotificationsBell />
           <ThemeToggle />
         </div>
       </header>

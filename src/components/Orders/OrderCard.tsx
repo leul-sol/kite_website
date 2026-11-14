@@ -17,7 +17,7 @@ export const STATUS_STYLE: Record<string, string> = {
   CANCELLATION_REQUESTED: "bg-warning/10 text-warning", RESCHEDULE_REQUESTED: "bg-warning/10 text-warning",
 };
 
-export default function OrderCard({ order, busy, onAction, onReview, staff, onAssign, onHandover }: {
+export default function OrderCard({ order, busy, onAction, onReview, staff, onAssign, onHandover, highlighted }: {
   order: Order; busy: boolean;
   onAction: (order: Order, target: OrderTarget) => void;
   onReview: (order: Order) => void;
@@ -25,9 +25,12 @@ export default function OrderCard({ order, busy, onAction, onReview, staff, onAs
   staff?: StaffMember[];
   onAssign?: (order: Order) => void;
   onHandover?: (order: Order) => void;
+  /** Opened from a notification about this booking. */
+  highlighted?: boolean;
 }) {
   const actions = orderActions(order.status);
-  return <article className="space-y-3 rounded-xl border bg-card p-4 shadow-xs transition hover:shadow-sm">
+  return <article id={`order-${order.id}`} aria-current={highlighted ? "true" : undefined}
+    className={cn("space-y-3 rounded-xl border bg-card p-4 shadow-xs transition hover:shadow-sm", highlighted && "ring-2 ring-primary")}>
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
         <h4 className="font-medium">Booking {order.id.slice(0, 8)}</h4>

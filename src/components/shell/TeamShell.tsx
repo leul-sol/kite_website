@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { KiteBrand } from "./AppSidebar";
 import { ThemeToggle } from "./PortalShell";
 import { signOut } from "./useProviderShell";
+import { NotificationsBell } from "./NotificationsBell";
 
 /** A deliberately small shell for team members: their work, nothing else. */
 export default function TeamShell({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,7 @@ export default function TeamShell({ children }: { children: React.ReactNode }) {
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur sm:px-6">
       <KiteBrand href="/my-work" label="Team" />
       <div className="ml-auto flex items-center gap-1">
+        <NotificationsBell />
         <ThemeToggle />
         <Button variant="ghost" size="sm" onClick={() => void signOut()}><LogOut className="size-4" />Sign out</Button>
       </div>
