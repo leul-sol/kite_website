@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/shell/fields";
 import { cn } from "@/lib/utils";
 import StaffAvatar from "./StaffAvatar";
+import { useT } from "@/i18n/I18nProvider";
 
 const TONE = { free: "bg-success/10 text-success", off: "bg-destructive/10 text-destructive", busy: "bg-warning/10 text-warning" };
 
@@ -23,6 +24,8 @@ export default function AssignStaffDialog({ bookingId, start, end, title, onClos
   const [selected, setSelected] = useState<string[]>([]);
   const [conflicts, setConflicts] = useState<StaffConflict[]>([]);
   const [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const { t, err, locale } = useT();
+  const day = (d: string) => shortDay(d, locale);
 
   useEffect(() => {
     let active = true;
@@ -30,18 +33,18 @@ export default function AssignStaffDialog({ bookingId, start, end, title, onClos
       if (!active) return;
       setSchedule(data);
       setSelected(data.bookings.find(b => b.id === bookingId)?.staff ?? []);
-    }).catch(cause => { if (active) setError((cause as Error).message); });
+    }).catch(cause => { if (active) setError(err(cause, "common.tryAgain")); });
     return () => { active = false; };
-  }, [bookingId, start, end]);
+  }, [bookingId, start, end]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save(acknowledge: boolean) {
     setBusy(true); setError("");
     try {
       const result = await api.assignStaff(bookingId, selected, acknowledge);
       if (!result.saved) { setConflicts(result.conflicts); return; }
-      toast.success(selected.length ? `Staff assigned to booking ${bookingId.slice(0, 8)}` : "Staff removed from booking");
+      toast.success(selected.length ? t("asg.assigned", { ref: bookingId.slice(0, 8) }) : t("asg.removed"));
       onSaved?.(); onClose();
-    } catch (cause) { setError((cause as Error).message); }
+    } catch (cause) { setError(err(cause, "common.tryAgain")); }
     finally { setBusy(false); }
   }
 
@@ -51,20 +54,20 @@ export default function AssignStaffDialog({ bookingId, start, end, title, onClos
   return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Assign staff</DialogTitle>
-        <DialogDescription>{title ?? `Booking ${bookingId.slice(0, 8)}`} · {start === end ? shortDay(start) : `${shortDay(start)} – ${shortDay(end)}`}</DialogDescription>
+        <DialogTitle>{t("ord.assignStaff")}</DialogTitle>
+        <DialogDescription>{title ?? t("booking.ref", { ref: bookingId.slice(0, 8) })} · {start === end ? day(start) : `${day(start)} – ${day(end)}`}</DialogDescription>
       </DialogHeader>
       {error && <FormError>{error}</FormError>}
-      {!schedule && !error && <div role="status" className="space-y-2"><span className="sr-only">Loading team…</span>{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+      {!schedule && !error && <div role="status" className="space-y-2"><span className="sr-only">{t("asg.loading")}</span>{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
       {schedule && staff.length === 0 && <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center">
         <Users className="size-5 text-muted-foreground" />
-        <p className="text-sm font-medium">No team members yet</p>
-        <p className="text-xs text-muted-foreground">Add the people who work your events first.</p>
-        <Button asChild size="sm" variant="outline"><Link href="/team">Add your team</Link></Button>
+        <p className="text-sm font-medium">{t("asg.none")}</p>
+        <p className="text-xs text-muted-foreground">{t("asg.noneText")}</p>
+        <Button asChild size="sm" variant="outline"><Link href="/team">{t("asg.addTeam")}</Link></Button>
       </div>}
-      {staff.length > 0 && <ul className="max-h-80 space-y-1.5 overflow-y-auto" aria-label="Team members">
+      {staff.length > 0 && <ul className="max-h-80 space-y-1.5 overflow-y-auto" aria-label={t("asg.members")}>
         {staff.map(member => {
-          const state = availability(member, schedule!, bookingId, start, end), on = selected.includes(member.id);
+          const state = availability(member, schedule!, bookingId, start, end, locale), on = selected.includes(member.id);
           return <li key={member.id}>
             <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border p-2.5 transition hover:bg-accent", on && "border-primary bg-primary/5")}>
               <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={on} disabled={busy} onChange={() => toggle(member.id)} />
@@ -79,14 +82,14 @@ export default function AssignStaffDialog({ bookingId, start, end, title, onClos
         })}
       </ul>}
       {conflicts.length > 0 && <div role="alert" className="space-y-1.5 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
-        <p className="flex items-center gap-2 font-medium text-warning"><AlertTriangle className="size-4" />Check before saving</p>
-        <ul className="list-disc space-y-0.5 pl-5 text-foreground">{conflicts.map((c, i) => <li key={i}>{describeConflict(c, staff)}</li>)}</ul>
+        <p className="flex items-center gap-2 font-medium text-warning"><AlertTriangle className="size-4" />{t("asg.check")}</p>
+        <ul className="list-disc space-y-0.5 pl-5 text-foreground">{conflicts.map((c, i) => <li key={i}>{describeConflict(c, staff, locale)}</li>)}</ul>
       </div>}
       <DialogFooter>
-        <Button variant="outline" disabled={busy} onClick={onClose}>Cancel</Button>
+        <Button variant="outline" disabled={busy} onClick={onClose}>{t("common.cancel")}</Button>
         {conflicts.length > 0
-          ? <Button disabled={busy} onClick={() => void save(true)}>{busy ? "Saving…" : "Assign anyway"}</Button>
-          : <Button disabled={busy || !schedule} onClick={() => void save(false)}>{busy ? "Saving…" : "Save staff"}</Button>}
+          ? <Button disabled={busy} onClick={() => void save(true)}>{busy ? t("common.saving") : t("asg.anyway")}</Button>
+          : <Button disabled={busy || !schedule} onClick={() => void save(false)}>{busy ? t("common.saving") : t("asg.save")}</Button>}
       </DialogFooter>
     </DialogContent>
   </Dialog>;

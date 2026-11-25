@@ -5,6 +5,7 @@ import {
   LOCALE_COOKIE, formatDate, formatMoney, timeAgo, translate, translateCount,
   type Locale, type MessageKey, type Params,
 } from "./translate";
+import { errorText } from "./errors";
 
 type I18n = {
   locale: Locale;
@@ -14,6 +15,8 @@ type I18n = {
   date: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) => string;
   money: (minor: number, currency?: string) => string;
   ago: (iso: string) => string;
+  /** Text for a caught error: ours in the reader's language, the server's as written. */
+  err: (cause: unknown, fallback: MessageKey) => string;
   setLocale: (locale: Locale) => void;
 };
 
@@ -25,6 +28,7 @@ function build(locale: Locale, setLocale: (l: Locale) => void): I18n {
     date: (value, options) => formatDate(locale, value, options),
     money: (minor, currency) => formatMoney(locale, minor, currency),
     ago: iso => timeAgo(locale, iso),
+    err: (cause, fallback) => errorText((key, params) => translate(locale, key, params), cause, fallback),
     setLocale,
   };
 }

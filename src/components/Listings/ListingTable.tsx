@@ -12,8 +12,10 @@ import { cn } from "@/lib/utils";
 import ListingPhotoManager from "./ListingPhotoManager";
 import ListingDialog from "./ListingDialog";
 import ListingEditDialog from "./ListingEditDialog";
+import { useCategoryName } from "@/i18n/labels";
+import { useT } from "@/i18n/I18nProvider";
 
-const UNIT: Record<Listing["pricingUnit"], string> = { DAY: "day", EVENT: "event", HOUR: "hour", PERSON: "guest" };
+const UNIT = { DAY: "unit.day", EVENT: "unit.event", HOUR: "unit.hour", PERSON: "unit.guest" } as const;
 type View = "all" | "rentals" | "services" | "active" | "inactive";
 
 function matches(item: Listing, view: View, query: string) {
@@ -30,52 +32,54 @@ export default function ListingTable({ refreshSignal, onCreate }: { refreshSigna
   const [photoBusy, setPhotoBusy] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [view, setView] = useState<View>("all"), [query, setQuery] = useState("");
+  const { t, tn, money } = useT();
+  const categoryName = useCategoryName();
   useEffect(() => {
     let mounted = true; setLoading(true); setError("");
-    api.getListings().then(items => { if (mounted) setListings(items); }).catch(() => { if (mounted) setError("Listings could not be loaded."); })
+    api.getListings().then(items => { if (mounted) setListings(items); }).catch(() => { if (mounted) setError(t("lst.loadFailed")); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, [refreshSignal, revision]);
+  }, [refreshSignal, revision]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = useMemo(() => listings.filter(item => matches(item, view, query)), [listings, view, query]);
   const count = (v: View) => listings.filter(item => matches(item, v, "")).length;
 
   return <div className="space-y-4">
     {editing && <ListingEditDialog itemId={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setRevision(value => value + 1); }} />}
-    {selected && <ListingDialog label={`Photos for ${selected.name}`} busy={photoBusy} onClose={() => setSelected(null)}>
-      <div><h2 className="text-lg font-semibold">{selected.name}</h2><p className="text-sm text-muted-foreground">Photos customers see on this listing.</p></div>
+    {selected && <ListingDialog label={t("lst.photosFor", { name: selected.name })} busy={photoBusy} onClose={() => setSelected(null)}>
+      <div><h2 className="text-lg font-semibold">{selected.name}</h2><p className="text-sm text-muted-foreground">{t("lst.photosText")}</p></div>
       <ListingPhotoManager itemId={selected.id} active={selected.status === "Active"} onChanged={() => setRevision(value => value + 1)} onBusyChange={setPhotoBusy} />
-      <div className="flex justify-end"><Button variant="outline" disabled={photoBusy} onClick={() => setSelected(null)}>Done</Button></div>
+      <div className="flex justify-end"><Button variant="outline" disabled={photoBusy} onClick={() => setSelected(null)}>{t("common.done")}</Button></div>
     </ListingDialog>}
 
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Tabs value={view} onValueChange={value => setView(value as View)} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <TabsList className="w-max">
-          {([["all", "All"], ["rentals", "Rentals"], ["services", "Services"], ["active", "Active"], ["inactive", "Inactive"]] as [View, string][]).map(([v, label]) =>
+          {(["all", "rentals", "services", "active", "inactive"] as View[]).map(v => [v, t(`lst.tab.${v}`)] as const).map(([v, label]) =>
             <TabsTrigger key={v} value={v}>{label}<span className="ml-1 text-xs text-muted-foreground tabular-nums">{loading ? "" : count(v)}</span></TabsTrigger>)}
         </TabsList>
       </Tabs>
       <div className="flex items-center gap-2">
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input aria-label="Search listings" placeholder="Search listings" value={query} onChange={e => setQuery(e.target.value)} className="pl-8" />
+          <Input aria-label={t("lst.search")} placeholder={t("lst.search")} value={query} onChange={e => setQuery(e.target.value)} className="pl-8" />
         </div>
-        <Button variant="outline" size="icon" aria-label="Refresh listings" disabled={loading} onClick={() => setRevision(value => value + 1)}>
+        <Button variant="outline" size="icon" aria-label={t("lst.refresh")} disabled={loading} onClick={() => setRevision(value => value + 1)}>
           <RefreshCw className={cn("size-4", loading && "animate-spin")} />
         </Button>
       </div>
     </div>
 
     {loading && <div role="status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <span className="sr-only">Loading listings...</span>
+      <span className="sr-only">{t("lst.loading")}</span>
       {[0, 1, 2].map(i => <div key={i} className="overflow-hidden rounded-xl border bg-card"><Skeleton className="aspect-[4/3] rounded-none" /><div className="space-y-2 p-4"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-1/3" /></div></div>)}
     </div>}
     {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</p>}
-    {!loading && !error && listings.length === 0 && <EmptyState icon={<Package className="size-5" />} title="No listings yet"
-      description="Add the rentals and services customers can book. You can add photos right after creating a listing."
-      action={onCreate && <Button onClick={onCreate}>Add your first listing</Button>} />}
+    {!loading && !error && listings.length === 0 && <EmptyState icon={<Package className="size-5" />} title={t("lst.empty")}
+      description={t("lst.emptyText")}
+      action={onCreate && <Button onClick={onCreate}>{t("lst.addFirst")}</Button>} />}
     {!loading && !error && listings.length > 0 && shown.length === 0 &&
-      <EmptyState icon={<Search className="size-5" />} title="No matching listings" description="Try another filter or search word."
-        action={<Button variant="outline" onClick={() => { setView("all"); setQuery(""); }}>Clear filters</Button>} />}
+      <EmptyState icon={<Search className="size-5" />} title={t("lst.noMatch")} description={t("lst.noMatchText")}
+        action={<Button variant="outline" onClick={() => { setView("all"); setQuery(""); }}>{t("common.clearFilters")}</Button>} />}
 
     {!loading && !error && shown.length > 0 && <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {shown.map(item => <li key={item.id} className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs transition hover:shadow-md">
@@ -84,19 +88,19 @@ export default function ListingTable({ refreshSignal, onCreate }: { refreshSigna
             ? <img className="size-full object-cover" src={item.image} alt={item.name} />
             : <div className="grid size-full place-items-center text-muted-foreground"><ImageIcon className="size-8" /></div>}
           <div className="absolute left-3 top-3 flex gap-1.5">
-            <Badge className={cn("shadow-sm", item.listingType === "SERVICE" ? "bg-primary text-primary-foreground" : "bg-card text-foreground")}>{item.listingType === "SERVICE" ? "Service" : "Rental"}</Badge>
-            {item.status === "Inactive" && <Badge variant="secondary" className="shadow-sm">Inactive</Badge>}
+            <Badge className={cn("shadow-sm", item.listingType === "SERVICE" ? "bg-primary text-primary-foreground" : "bg-card text-foreground")}>{item.listingType === "SERVICE" ? t("lst.service") : t("lst.rental")}</Badge>
+            {item.status === "Inactive" && <Badge variant="secondary" className="shadow-sm">{t("lst.inactive")}</Badge>}
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="min-w-0">
             <p className="truncate font-medium">{item.name}</p>
-            <p className="text-xs text-muted-foreground"><span className="capitalize">{item.category}</span> · {item.listingType === "SERVICE" ? `${item.stock} ${item.stock === 1 ? "booking" : "bookings"} per day` : `${item.stock} in stock`}</p>
+            <p className="text-xs text-muted-foreground"><span className="capitalize">{categoryName(item.category, item.category)}</span> · {item.listingType === "SERVICE" ? tn("lst.perDay", item.stock) : t("lst.inStock", { count: item.stock })}</p>
           </div>
-          <p className="text-lg font-semibold tabular-nums">{item.currency} {(item.priceMinor / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="ml-1 text-sm font-normal text-muted-foreground">/ {UNIT[item.pricingUnit]}</span></p>
+          <p className="text-lg font-semibold tabular-nums">{money(item.priceMinor, item.currency)}<span className="ml-1 text-sm font-normal text-muted-foreground">/ {t(UNIT[item.pricingUnit])}</span></p>
           <div className="mt-auto flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditing(item.id)}><Pencil className="size-3.5" />Edit listing</Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(item)}><ImagePlus className="size-3.5" />Manage photos</Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditing(item.id)}><Pencil className="size-3.5" />{t("lst.edit")}</Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(item)}><ImagePlus className="size-3.5" />{t("lst.managePhotos")}</Button>
           </div>
         </div>
       </li>)}

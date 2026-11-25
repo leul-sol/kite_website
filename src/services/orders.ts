@@ -2,20 +2,25 @@ import { formatDashboardMoney } from "./provider-dashboard";
 
 export type OrderStatus = string;
 export type OrderTarget = "REJECTED" | "CONFIRMED" | "ACTIVE" | "CANCELLED" | "COMPLETED";
-export type Order = { id: string; customerId: string; date: string; total: string; status: OrderStatus };
+export type Order = {
+  id: string; customerId: string; date: string; status: OrderStatus;
+  /** English "ETB 123.45"; screens format totalMinor in the reader's language. */
+  total: string; totalMinor: number; currency: string;
+};
 export type ChangeRequest = {
   id: string; request_type: string; status: string; reason: string | null; requested_role: string;
   requested_start_date: string | null; requested_end_date: string | null;
 };
+/** `title` is English; screens show t(key). */
 export const orderColumns = [
-  { id: "payment", title: "Awaiting payment" },
-  { id: "confirmation", title: "Awaiting confirmation" },
-  { id: "confirmed", title: "Confirmed" },
-  { id: "progress", title: "In progress" },
-  { id: "changes", title: "Change requests" },
-  { id: "completed", title: "Completed" },
-  { id: "closed", title: "Closed / expired" },
-  { id: "other", title: "Other statuses" },
+  { id: "payment", title: "Awaiting payment", key: "ord.col.payment" },
+  { id: "confirmation", title: "Awaiting confirmation", key: "ord.col.confirmation" },
+  { id: "confirmed", title: "Confirmed", key: "ord.col.confirmed" },
+  { id: "progress", title: "In progress", key: "ord.col.progress" },
+  { id: "changes", title: "Change requests", key: "ord.col.changes" },
+  { id: "completed", title: "Completed", key: "ord.col.completed" },
+  { id: "closed", title: "Closed / expired", key: "ord.col.closed" },
+  { id: "other", title: "Other statuses", key: "ord.col.other" },
 ] as const;
 export function orderColumn(status: string): string {
   switch (status) {
@@ -29,6 +34,7 @@ export function orderColumn(status: string): string {
     default: return "other";
   }
 }
+/** `label` is English; screens show t(`ord.act.${target}`). */
 export function orderActions(status: string): { target: OrderTarget; label: string }[] {
   switch (status) {
     case "REQUESTED": return [{ target: "REJECTED", label: "Reject unpaid request" }];
@@ -67,6 +73,7 @@ export function parseOrders(value: unknown): Order[] {
     }
     return { id: booking.bookingId, customerId: booking.customerId, status: booking.status,
       date: `${booking.startDate} - ${booking.endDate}`,
-      total: formatDashboardMoney(String(booking.totalMinor), booking.currency) };
+      total: formatDashboardMoney(String(booking.totalMinor), booking.currency),
+      totalMinor: booking.totalMinor, currency: booking.currency };
   });
 }

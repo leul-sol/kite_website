@@ -1,0 +1,299 @@
+.galleryJourney { overflow-anchor: none; }
+
+.galleryRunway { height: var(--gallery-travel, 0px); }
+
+.gallery {
+  --gallery-pad: clamp(1.25rem, 5vw, 4.25rem);
+  --dock-width: clamp(3.8rem, 8vw, 6rem);
+  --dock-height: clamp(2.4rem, 5vw, 3.8rem);
+  --dock-gap: 0.4rem;
+  --tile-width: min(27vw, 21.5rem);
+  --tile-height: min(53svh, 27rem);
+  --tile-gap: clamp(0.55rem, 1.55vw, 1.5rem);
+  --rail-width: calc(var(--scene-count) * (var(--tile-width) + var(--tile-gap)) - var(--tile-gap) + 2 * var(--gallery-pad));
+  position: sticky;
+  top: 0;
+  display: grid;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  color: #fafaf1;
+  background: #fff;
+}
+
+.scenes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  clip-path: inset(0);
+  transition: clip-path 780ms cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.scenes::after {
+  position: absolute;
+  top: 0;
+  left: calc(var(--rail-width) - 1px);
+  width: 1px;
+  height: 1px;
+  content: "";
+  pointer-events: none;
+}
+
+.gallery[data-open="true"] .scenes {
+  clip-path: inset(0 var(--gallery-pad));
+}
+
+.gallery[data-open="true"][data-centered="true"] .scenes { overflow-x: auto; }
+.gallery[data-open="false"] { touch-action: pinch-zoom; }
+
+.scene, .currentThumb {
+  --dock-left: calc(var(--resting-offset) + 100% - var(--gallery-pad) - (3 - var(--dock-index)) * (var(--dock-width) + var(--dock-gap)) + var(--dock-gap));
+  position: absolute;
+  z-index: 2;
+  top: calc(100% - var(--gallery-pad) - var(--dock-height));
+  left: var(--dock-left);
+  width: var(--dock-width);
+  height: var(--dock-height);
+  overflow: hidden;
+  border-radius: 0.3rem;
+  background: #26352a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.scene {
+  --image-position: 0;
+  --scene-motion: 780ms cubic-bezier(0.2, 0.78, 0.24, 1) var(--scene-delay, 0ms);
+  transition: top var(--scene-motion), left var(--scene-motion), width var(--scene-motion),
+    height var(--scene-motion), border-radius var(--scene-motion),
+    opacity var(--scene-motion);
+}
+
+.scene img, .currentThumb img { object-fit: cover; object-position: 55% center; }
+.scene img { transition: object-position 650ms cubic-bezier(0.2, 0.78, 0.24, 1); }
+
+.sceneMedia {
+  position: absolute;
+  inset: 0;
+  transition: inset 650ms cubic-bezier(0.2, 0.78, 0.24, 1), transform 650ms cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.gallery[data-open="true"] .sceneMedia {
+  /* The photograph slides behind the clipped tile using the same scroll position as the rail. */
+  inset-inline: -44%;
+  transform: translateX(calc(var(--image-position) * -23%));
+  transition-property: inset;
+}
+
+.gallery[data-open="true"] .scene img {
+  object-position: calc(50% + var(--image-position) * 24%) center;
+  transition: none;
+}
+.currentThumb { outline: 1px solid #def471; transition: opacity 180ms ease 480ms; }
+.gallery[data-open="true"] .currentThumb { opacity: 0; transition-delay: 0ms; pointer-events: none; }
+
+.scene[data-active="true"] {
+  z-index: 1;
+  top: 0;
+  left: var(--resting-offset);
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  cursor: default;
+}
+
+.gallery[data-open="false"] .scene:not([data-active="true"]):not([data-docked="true"]) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scene::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #08100eea 0%, #08100e80 27%, transparent 64%),
+    linear-gradient(135deg, #08100e90, transparent 51%);
+  content: "";
+  opacity: 0;
+  transition: opacity 430ms ease;
+}
+
+.scene[data-active="true"]::after { opacity: 1; }
+
+.gallery[data-open="true"] .scene {
+  top: calc(50% - var(--tile-height) / 2);
+  left: calc(var(--gallery-pad) + var(--scene-index) * (var(--tile-width) + var(--tile-gap)));
+  width: var(--tile-width);
+  height: var(--tile-height);
+  border-radius: 0.45rem;
+  cursor: pointer;
+}
+
+.gallery[data-open="true"] .scene:not([data-active="true"]) {
+  --scene-delay: calc(65ms + var(--scene-index) * 55ms);
+}
+
+.gallery[data-open="true"] .scene::after {
+  background: linear-gradient(0deg, #08100ed9, transparent 52%);
+  opacity: 1;
+}
+
+.sceneLabel {
+  position: absolute;
+  z-index: 1;
+  inset: auto 0 0;
+  padding: clamp(0.5rem, 2vw, 1.35rem);
+  opacity: 0;
+  color: #fff;
+  font-size: clamp(0.8125rem, 1.7vw, 1.35rem);
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: start;
+  transition: opacity 200ms ease;
+}
+
+.gallery[data-open="true"] .sceneLabel { opacity: 1; transition-delay: 430ms; }
+.scene:enabled:hover:not(:focus-visible) { outline: 1px solid #def471; outline-offset: -1px; }
+.scene:focus-visible, .currentThumb:focus-visible, .toggle:focus-visible { outline: 2px solid #def471; outline-offset: 3px; }
+.scene:focus-visible { outline-offset: -3px; }
+
+.layout {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4rem;
+  min-width: 0;
+  padding: var(--gallery-pad);
+  pointer-events: none;
+}
+
+.sectionTitle {
+  align-self: flex-start;
+  color: #f0f4d7;
+  font-size: 0.875rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gallery[data-open="true"] .sectionTitle { color: #26372b; }
+
+.bottom {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.8rem;
+}
+
+.copy {
+  min-width: 0;
+  transition: opacity 240ms ease 420ms, transform 600ms cubic-bezier(0.2, 0.78, 0.24, 1) 260ms;
+}
+
+.gallery[data-open="true"] .copy {
+  opacity: 0;
+  transform: translateY(0.6rem);
+  transition-delay: 0ms;
+}
+
+.caption h3 {
+  max-width: 14ch;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.35rem, 6.1vw, 6.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+:global(html[lang="am"]) .caption h3 {
+  max-width: 18ch;
+  font-family: var(--font-ethiopic), sans-serif;
+  font-size: clamp(2rem, 4.6vw, 4.65rem);
+  line-height: 1.15;
+  letter-spacing: normal;
+}
+
+.caption p { max-width: 29rem; margin-top: 0.8rem; color: #edf1e4; font-size: 1rem; line-height: 1.55; }
+
+.toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.65rem;
+  padding: 0.5rem 0.82rem;
+  border: 1px solid #eff4d975;
+  border-radius: 999px;
+  color: #fafaf1;
+  background: #111a14d9;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: border-color 180ms ease;
+}
+
+.toggle:hover { border-color: #def471; }
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: calc(var(--dock-height) + 0.7rem);
+  transition: margin-bottom 600ms cubic-bezier(0.2, 0.78, 0.24, 1);
+}
+
+.gallery[data-open="true"] .actions { margin-bottom: 0; }
+.railControls { display: flex; gap: 0.35rem; }
+
+.railControls button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid #eff4d975;
+  border-radius: 50%;
+  color: #fafaf1;
+  background: #111a14d9;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.railControls button:disabled { opacity: 0.4; cursor: default; }
+.railControls button:enabled:hover { border-color: #def471; }
+.railControls button:focus-visible { outline: 2px solid #def471; outline-offset: 3px; }
+
+.gallery[data-open="true"] :is(.toggle, .railControls button) {
+  border-color: #d0d9d0;
+  color: #26372b;
+  background: #fff;
+}
+
+.gallery[data-open="true"] :is(.toggle, .railControls button:enabled):hover {
+  border-color: #758b79;
+  background: #f2f6f1;
+}
+
+.gallery[data-open="true"] :is(.scene, .toggle, .railControls button):focus-visible { outline-color: #48624f; }
+
+@media (max-width: 700px) {
+  .gallery {
+    --tile-width: clamp(8rem, 48vw, 14rem);
+    --tile-height: clamp(8.5rem, 29svh, 14rem);
+  }
+  .scene img { object-position: 58% center; }
+  .bottom { align-items: stretch; flex-direction: column; gap: 0.95rem; }
+  .actions { align-self: end; }
+  .caption p { margin-top: 0.45rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scenes, .scene, .scene img, .sceneMedia, .scene::after, .sceneLabel, .currentThumb, .copy, .toggle, .actions { transition: none; }
+  .gallery[data-open="true"] .copy { transform: none; }
+  .gallery[data-open="true"] .sceneMedia { inset-inline: 0; transform: none; }
+  .gallery[data-open="true"] .scene img { object-position: 55% center; }
+}
